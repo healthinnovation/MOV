@@ -1,0 +1,40 @@
+---
+title: "MOV 1"
+author: "jose"
+date: "18/6/2021"
+output: html_document
+---
+
+# Bases
+```{r}
+library(tidyverse)
+
+DIT <- read.csv("ENDES/DIT.csv", sep = ";" )
+REC41 <- read.csv("ENDES/REC41.csv", sep = ";" )
+REC42 <- read.csv("ENDES/REC42.csv", sep = ";" )
+REC43 <- read.csv("ENDES/REC43.csv", sep = ";" )
+REC95 <- read.csv("ENDES/REC95.csv", sep = ";" )
+RECH0 <- read.csv("ENDES/RECH0.csv", sep = ";" )
+RECH1 <- read.csv("ENDES/RECH1.csv", sep = ";" )
+RECH23 <- read.csv("ENDES/RECH23.csv", sep = ";" )
+```
+
+#Joint
+```{r}
+DIT %>% select(CASEID,QI478,BIDX)
+
+REC41 %>% select(CASEID,M15)
+
+REC42 %>% select(CASEID,V481:V481X)
+
+REC43 %>% select(CASEID,H1:H10)
+
+REC95 %>% select(CASEID,S466,S466B,S45D4:S45IF2Y)
+
+RECH0 %>% select(HHID,HV003,HV000:HV002A,HV005,HV022,HV007,HV008,HV021,HV023:HV026) %>% mutate(CASEID = stringr::str_pad(paste(HHID,HV003),10,side = "left",pad = "0"))
+
+RECH1 %>% select(HHID,HVIDX,QH25A,HV122)
+
+RECH23 %>% select(HHID,HV270)
+```
+
