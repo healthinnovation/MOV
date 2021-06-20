@@ -140,12 +140,14 @@ MOV2020<-MOV2020 %>%
          
          EDAD_ANIOS = round((QI478/12),0),
          
-         SEGURO = as.factor(V481),
+         SEGURO = factor(V481, levels = c(0,1), labels = c("No","Si")),
          
          EDAD_MADRE = V012,
          
          INDICERIQUEZA = V190) 
   
+
+table(MOV2020$CRED)
 ```
 
 RESUMEN 
@@ -154,8 +156,10 @@ RESUMEN
 df <- svydesign(id =~ V001, strata =~ V022, weights=~ V005, data=MOV2020) 
 
 
-
 options(survey.lonely.psu="remove")
-svyby(~SEGURO,by=~CRED,design =df,FUN=svyciprop, vartype=c('se','ci'))
+# options(survey.adjust.domain.lonely=TRUE)
+# options(survey.lonely.psu="adjust")
+
+svyby(~H4,by=~SEGURO,design =df,FUN=svyciprop, vartype=c('se','ci'))
 ```
 
