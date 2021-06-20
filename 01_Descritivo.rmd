@@ -8,33 +8,154 @@ output: html_document
 # Bases
 ```{r}
 library(tidyverse)
+library(gtsummary)
+library(survey)
 
-DIT <- read.csv("ENDES/DIT.csv", sep = ";" )
-REC41 <- read.csv("ENDES/REC41.csv", sep = ";" )
-REC42 <- read.csv("ENDES/REC42.csv", sep = ";" )
-REC43 <- read.csv("ENDES/REC43.csv", sep = ";" )
-REC95 <- read.csv("ENDES/REC95.csv", sep = ";" )
-RECH0 <- read.csv("ENDES/RECH0.csv", sep = ";" )
-RECH1 <- read.csv("ENDES/RECH1.csv", sep = ";" )
-RECH23 <- read.csv("ENDES/RECH23.csv", sep = ";" )
+NINIO <- read.csv("ENDES/DIT.csv", sep = ";" )
+NINIO2 <- read.csv("ENDES/REC41.csv", sep = ";" )
+MUJER1 <- read.csv("ENDES/REC42.csv", sep = ";" )
+VACUNA1 <- read.csv("ENDES/REC43.csv", sep = ";" )
+VACUNA2 <- read.csv("ENDES/REC95.csv", sep = ";" )
+HOGAR1 <- read.csv("ENDES/RECH0.csv", sep = ";" )
+HOGAR_MADRE <- read.csv("ENDES/RECH1.csv", sep = ";" )
+VIVIENDA1 <- read.csv("ENDES/RECH23.csv", sep = ";" )
+MUJER2<- read.csv("ENDES/REC0111.csv", sep = ";" )
 ```
 
-#Joint
+# PRE UNION
 ```{r}
-DIT %>% select(CASEID,QI478,BIDX)
+# BD principales
 
-REC41 %>% select(CASEID,M15)
+VACUNA1 <- VACUNA1 %>% select(CASEID,H1:H10) %>% mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-REC42 %>% select(CASEID,V481:V481X)
+VACUNA2 <- VACUNA2 %>% select(CASEID,S466,S466B,S45D4:S45IF2Y) %>% mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-REC43 %>% select(CASEID,H1:H10)
 
-REC95 %>% select(CASEID,S466,S466B,S45D4:S45IF2Y)
+# Otras BD
+NINIO <- NINIO %>% select(CASEID,QI478,BIDX) %>% mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-RECH0 %>% select(HHID,HV003,HV000:HV002A,HV005,HV022,HV007,HV008,HV021,HV023:HV026) %>% mutate(CASEID = stringr::str_pad(paste(HHID,HV003),10,side = "left",pad = "0"))
+NINIO2 <- NINIO2 %>% select(CASEID,M15) %>% mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-RECH1 %>% select(HHID,HVIDX,QH25A,HV122)
+MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-RECH23 %>% select(HHID,HV270)
+MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V131,V190) %>% mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,QH25A,HV122)
+
+
+# Caracteristicas por Hogar
+
+HOGAR1<- HOGAR1 %>% select(HHID,HV003,HV000:HV002A,HV005,HV022,HV007,HV008,HV021,HV023:HV026) 
+VIVIENDA1<- VIVIENDA1 %>% select(HHID,HV270)
+#
+
+
+```
+
+# UNION
+
+```{r}
+
+## BD intermedias
+VACUNA_2020 <- VACUNA1 %>% full_join(VACUNA2, by =c("HHID","CASEID")) 
+
+NINIO_2020 <- NINIO %>% left_join(NINIO2, by = c("HHID","CASEID"))
+
+MUJER_2021 <- MUJER1 %>% 
+  
+  left_join(MUJER2, by = c("HHID","CASEID")) %>%
+  
+  left_join(HOGAR_MADRE, by = "HHID")
+
+
+## BD final
+MOV2020<- VACUNA_2020 %>% 
+  
+  left_join(NINIO_2020, by = c("HHID","CASEID")) %>% 
+  
+  left_join(MUJER_2021, by = c("HHID","CASEID")) %>% group_by(CASEID) %>% slice(1) %>% filter(!is.na(H1)) %>% ungroup()
+
+```
+
+# EDITADO
+
+V001 : CONGLOMERADO
+V022 : ESTRATO
+V005 : FACTOR DE PONDERACION MUJER
+
+```{r}
+MOV2020<-MOV2020 %>%
+  
+  select(H1,H2,H3,H4,H5,H6,H7,H8,H9,H10,
+         S45D4,S45D5,S45P4,S45P5,S45B0,S45B1,
+         S45B2,S45B3,S45F1,S45F2,S45F3,S45PV1,
+         S45PV2,S45PV3,S45TT,S45SP1,S45SP2,S45SR,
+         S45NM1,S45NM2,S45NM3,S45RT1,S45RT2,S45IF1,
+         S45IF2,S466,S466B,V001,V005,V012,V022,V023,
+         V024,V025,V102,V106,V131,
+         QI478,V481:V481X,V190,V022) %>% 
+  
+        # cATEGORIAS DE RESPUESTA A LA VACUNACION
+  mutate(across(H1:S45IF2,~factor(.x, levels = c(0,1,2,3,8), labels = c("No","FechaTarjeta","Madre",
+                                                                        "MarcaTarjeta","NoSabe"))),
+         
+         
+         
+         CRED = ifelse(S466==0,"No",
+                       ifelse(S466==1,"Si","No sabe")),
+         
+         
+         CREDLUGAR = factor(S466B, levels = c(21,22,23,24,
+                                              25,26,27,31,
+                                              32,41,42,96), labels = c("H.MINSA","H.ESSALUD","H.FFAA",
+                                                                 "CS.MINSA","PUESTOMINSA","CS.ESSALUD",
+                                                                 "H.MUNI","CLINICA","MEDICO","CLINICA/ONG",
+                                                                 "H.IGLESIA","OTRO")),
+         
+         
+         
+         TIPORESIDENCIA = ifelse(V025==1,"URBANO","RURAL"),
+         
+         
+         LUGARRESIDENCIA = factor(V102, levels = c(0,1,2,3), labels = c("Gran ciudad","Peq ciudad",
+                                                                        "Pueblo","Campo")),
+         
+         
+         REGION = factor(V024, levels = c(1:25), labels = c("amazonas","ancash","apurimac","arequipa","ayacucho",
+                                                            "cajamarca","callao","cusco","huancavelica","huanuco",
+                                                            "ica","junin","la libertad","lambayeque","lima",
+                                                            "loreto","madre de dios","moquegua","pasco","piura",
+                                                            "puno","san martin","tacna","tumbes","ucayali")),
+         
+         
+         
+         EDU_MADRE = factor(V106, levels = c(0,1,2,3), labels = c("Sin educ","primaria","secundaria","superior")),
+         
+         
+         ETNIA_MADRE = factor(V131, levels = c(1:12), labels = c("quechua","aimara","ashaninka","awajun",
+                                                                 "shipibo","shawi","matsigenka","achuar",
+                                                                 "Otro","castellano","portugues","Otro extranjero")),
+         
+         
+         
+         EDAD_ANIOS = round((QI478/12),0),
+         
+         SEGURO = as.factor(V481),
+         
+         EDAD_MADRE = V012,
+         
+         INDICERIQUEZA = V190) 
+  
+```
+
+RESUMEN 
+
+```{r}
+df <- svydesign(id =~ V001, strata =~ V022, weights=~ V005, data=MOV2020) 
+
+
+
+options(survey.lonely.psu="remove")
+svyby(~SEGURO,by=~CRED,design =df,FUN=svyciprop, vartype=c('se','ci'))
 ```
 
