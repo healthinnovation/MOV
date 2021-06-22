@@ -2,14 +2,23 @@
 title: "MOV 1"
 author: "jose"
 date: "18/6/2021"
-output: html_document
+output:
+  html_document:
+    code_folding: hide
+    fig_height: 6
+    fig_width: 9
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
 ---
 
 # Bases
-```{r}
+```{r, echo=F, warning=F, message=F, error=F}
 library(tidyverse)
 library(gtsummary)
 library(survey)
+library(RColorBrewer)
 
 NINIO <- read.csv("ENDES/DIT.csv", sep = ";" )
 NINIO2 <- read.csv("ENDES/REC41.csv", sep = ";" )
@@ -20,10 +29,11 @@ HOGAR1 <- read.csv("ENDES/RECH0.csv", sep = ";" )
 HOGAR_MADRE <- read.csv("ENDES/RECH1.csv", sep = ";" )
 VIVIENDA1 <- read.csv("ENDES/RECH23.csv", sep = ";" )
 MUJER2<- read.csv("ENDES/REC0111.csv", sep = ";" )
+
 ```
 
 # PRE UNION
-```{r}
+```{r, warning=F, message=F, error=F}
 # BD principales
 
 VACUNA1 <- VACUNA1 %>% select(CASEID,H1:H10) %>% mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
@@ -54,7 +64,7 @@ VIVIENDA1<- VIVIENDA1 %>% select(HHID,HV270)
 
 # UNION
 
-```{r}
+```{r, warning=F, message=F, error=F}
 
 ## BD intermedias
 VACUNA_2020 <- VACUNA1 %>% full_join(VACUNA2, by =c("HHID","CASEID")) 
@@ -75,54 +85,60 @@ MOV2020<- VACUNA_2020 %>%
   
   left_join(MUJER_2021, by = c("HHID","CASEID")) %>% group_by(CASEID) %>% slice(1) %>% filter(!is.na(H1)) %>% ungroup()
 
+
+
+
 ```
 
 # EDITADO
 
 
 
-```{r}
-MOV2020<-MOV2020 %>%
+```{r,warning=F, message=F, error=F}
+MOV2020_2 <-MOV2020 %>%
   
-  select(H1,H2,H3,H4,H5,H6,H7,H8,H9,H10,
-         S45D4,S45D5,S45P4,S45P5,S45B0,S45B1,
-         S45B2,S45B3,S45F1,S45F2,S45F3,S45PV1,
-         S45PV2,S45PV3,S45TT,S45SP1,S45SP2,S45SR,
-         S45NM1,S45NM2,S45NM3,S45RT1,S45RT2,S45IF1,
-         S45IF2,S466,S466B,V001,V005,V012,V022,V023,
+  select(CASEID,
+         # H1,H2,H3,H4,H5,H6,H7,H8,H9,H10,
+         # S45D4,S45D5,S45P4,S45P5,S45B0,S45B1,
+         # S45B2,S45B3,S45TT,S45SP1,S45SP2,S45SR,
+         S45F1,S45F2,S45F3,
+         S45PV1,S45PV2,S45PV3,
+         S45NM1,S45NM2,S45NM3,
+         S45RT1,S45RT2,
+         S45IF1,S45IF2,
+         
+         S466,S466B,V001,V005,V012,V022,V023,
          V024,V025,V102,V106,V131,
          QI478,V481:V481X,V190,V022) %>% 
   
+  
+  
+  
         # cATEGORIAS DE RESPUESTA A LA VACUNACION
   mutate(
-    across(H1:S45IF2,~factor(.x, levels = c(0,1,2,3,8), labels = c("No/NoSabe","Tarjeta","Madre",
-                                                                        "Tarjeta","No/NoSabe"))),
+    
+        across(S45F1:S45IF2,~ifelse(.x == 0|.x == 8,0, # 0: No, 8: No sabe
+                                 ifelse(.x == 1|.x == 3,1,2))),# 1: Tarjeta fecha, # 3: Marca tarjeta
+
     
     
-    # across(H1:S45IF2,~factor(.x, levels = c(0,1,2,3,8), labels = c("No","FechaTarjeta","Madre",
-    #                                                                     "MarcaTarjeta","NoSabe"))),
-    
          
-         
-         
-         CRED = as.factor(ifelse(S466==0,"No",
-                       ifelse(S466==1,"Si","No sabe"))),
+         CRED = as.factor(ifelse(S466==0,"No","Si")),
          
          
          CREDLUGAR = factor(S466B, levels = c(21,22,23,24,
                                               25,26,27,31,
-                                              32,41,42,96), labels = c("H.MINSA","H.ESSALUD","H.FFAA",
-                                                                 "CS.MINSA","PUESTOMINSA","CS.ESSALUD",
-                                                                 "H.MUNI","CLINICA","MEDICO","CLINICA/ONG",
-                                                                 "H.IGLESIA","OTRO")),
+                                              32,41,42,96), labels = c("H.MINSA/FFAA","H.ESSALUD","H.MINSA/FFAA",
+                                                                 "CS/POSTA MINSA","CS/POSTA MINSA","CS.ESSALUD",
+                                                                 "OTRO","PRIVADO","PRIVADO","PRIVADO",
+                                                                 "PRIVADO","OTRO")),
          
          
          
-         TIPORESIDENCIA = ifelse(V025==1,"URBANO","RURAL"),
+         TIPORESIDENCIA = ifelse(V102==1,"URBANO","RURAL"),
          
          
-         LUGARRESIDENCIA = factor(V102, levels = c(0,1,2,3), labels = c("Gran ciudad","Peq ciudad",
-                                                                        "Pueblo","Campo")),
+         
          
          
          REGION = factor(V024, levels = c(1:25), labels = c("amazonas","ancash","apurimac","arequipa","ayacucho",
@@ -148,38 +164,90 @@ MOV2020<-MOV2020 %>%
          
          EDAD_MADRE = V012,
          
-         INDICERIQUEZA = V190) 
+         INDICERIQUEZA = V190,
+    
+    
+        V005 = V005/1000000) %>% 
   
+  
+  fastDummies::dummy_cols(select_columns = c("S45F1","S45F2","S45F3", # Hib
+                                             "S45PV1","S45PV2","S45PV3", #Pentavalente
+                                             "S45NM1","S45NM2","S45NM3", #Neumococo
+                                             "S45IF1","S45IF2", #Influenza
+                                             "S45RT1","S45RT2" # Rotavirus
+                                             
+                                             )) %>% 
+  
+  
+  filter(!is.na(EDAD_ANIOS)) %>% 
+  
+  
+  mutate( HIB_COMPLETA = as.factor(ifelse(S45F1 !=0 & S45F2 != 0 & S45F3 != 0,1,0)),
+          PTV_COMPLETA = as.factor(ifelse(S45PV1 !=0 & S45PV2 != 0 & S45PV3 != 0,1,0)),
+          NEUMO_COMPLETA = as.factor(ifelse(S45NM1 !=0 & S45NM2 != 0 & S45NM3 != 0,1,0)),
+          INFLU_COMPLETA = as.factor(ifelse(S45IF1 !=0 & S45IF2 != 0,1,0)),
+          ROTA_COMPLETA = as.factor(ifelse(S45RT1 !=0 & S45RT2 != 0,1,0)))
+
 
 
 ```
 
-RESUMEN 
+# RESUMEN 
 
 V001 : CONGLOMERADO
 V022 : ESTRATO
 V005 : FACTOR DE PONDERACION MUJER
 
-```{r}
-df <- svydesign(id =~ V001, strata =~ V022, weights=~ V005, data=MOV2020) 
+```{r,warning=F, message=F, error=F}
+df <- svydesign(id =~ V001, strata =~ V022, weights=~V005, data=MOV2020_2) 
 
 
 options(survey.lonely.psu="remove")
 # options(survey.adjust.domain.lonely=TRUE)
 # options(survey.lonely.psu="adjust")
 
+```
 
-BCG<-svyby(~H2,by=~V024,design =df,FUN=svyciprop, vartype=c('se','ci')) %>% mutate(vacuna = H2,vacunatipo = "BCG") %>% select(-`se.as.numeric(H2)`,-H2)
-DPT1<-svyby(~H3,by=~V024,design =df,FUN=svyciprop, vartype=c('se','ci')) %>% mutate(vacuna = H3,vacunatipo = "DPT1") %>% select(-`se.as.numeric(H3)`,-H3)
-POLIO1<-svyby(~H4,by=~V024,design =df,FUN=svyciprop, vartype=c('se','ci')) %>% mutate(vacuna = H4,vacunatipo = "POLIO1") %>% select(-`se.as.numeric(H4)`,-H4)
-DPT2<-svyby(~H5,by=~V024,design =df,FUN=svyciprop, vartype=c('se','ci')) %>% mutate(vacuna = H5,vacunatipo = "DPT2") %>% select(-`se.as.numeric(H5)`,-H5)
-POLIO2<-svyby(~H6,by=~V024,design =df,FUN=svyciprop, vartype=c('se','ci')) %>% mutate(vacuna = H6,vacunatipo = "POLIO2") %>% select(-`se.as.numeric(H6)`,-H6)
-DPT3<-svyby(~H7,by=~V024,design =df,FUN=svyciprop, vartype=c('se','ci')) %>% mutate(vacuna = H7,vacunatipo = "DPT3") %>% select(-`se.as.numeric(H7)`,-H7)
-POLIO3<-svyby(~H8,by=~V024,design =df,FUN=svyciprop, vartype=c('se','ci')) %>% mutate(vacuna = H8,vacunatipo = "POLIO3") %>% select(-`se.as.numeric(H8)`,-H8)
-SARAMPION<-svyby(~H9,by=~V024,design =df,FUN=svyciprop, vartype=c('se','ci')) %>% mutate(vacuna = H9,vacunatipo = "SARAMPION") %>% select(-`se.as.numeric(H9)`,-H9)
+# PROPORCIONES POR REGIONES (GRAFICO)
+
+```{r, echo=F, warning=F, message=F, error=F, fig.height= 10, fig.width= 10}
+PTV_COMPLETA<-svyby(~PTV_COMPLETA, by=~V024, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = PTV_COMPLETA,vacunatipo = "PTV_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(PTV_COMPLETA)`,-PTV_COMPLETA)
 
 
-df2 <- bind_rows(BCG,DPT1,POLIO1,DPT2,POLIO2,DPT3,POLIO3,SARAMPION)
+HIB_COMPLETA<-svyby(~HIB_COMPLETA, by=~V024, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = HIB_COMPLETA,vacunatipo = "HIB_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(HIB_COMPLETA)`,-HIB_COMPLETA)
+
+
+NEUMO_COMPLETA<-svyby(~NEUMO_COMPLETA, by=~V024, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = NEUMO_COMPLETA,vacunatipo = "NEUMO_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(NEUMO_COMPLETA)`,-NEUMO_COMPLETA)
+
+
+INFLU_COMPLETA<-svyby(~INFLU_COMPLETA, by=~V024, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = INFLU_COMPLETA,vacunatipo = "INFLU_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(INFLU_COMPLETA)`,-INFLU_COMPLETA)
+
+
+ROTA_COMPLETA<-svyby(~ROTA_COMPLETA, by=~V024, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = ROTA_COMPLETA,vacunatipo = "ROTA_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(ROTA_COMPLETA)`,-ROTA_COMPLETA)
+
+
+
+df2 <- bind_rows(PTV_COMPLETA,HIB_COMPLETA,NEUMO_COMPLETA,INFLU_COMPLETA,ROTA_COMPLETA)
 
 
 gg<-function(df2){
@@ -202,5 +270,373 @@ grafico<-df2 %>% group_by(vacunatipo) %>% nest() %>% mutate(grafico = map(.x =da
 
 
 cowplot::plot_grid(plotlist = grafico$grafico)
+
 ```
 
+# PROPORCION POR CRED 
+
+```{r, echo=F, warning=F, message=F, error=F}
+PTV_COMPLETA<-svyby(~PTV_COMPLETA, by=~CRED, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = PTV_COMPLETA,vacunatipo = "PTV_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(PTV_COMPLETA)`,-PTV_COMPLETA)
+
+
+HIB_COMPLETA<-svyby(~HIB_COMPLETA, by=~CRED, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = HIB_COMPLETA,vacunatipo = "HIB_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(HIB_COMPLETA)`,-HIB_COMPLETA)
+
+
+NEUMO_COMPLETA<-svyby(~NEUMO_COMPLETA, by=~CRED, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = NEUMO_COMPLETA,vacunatipo = "NEUMO_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(NEUMO_COMPLETA)`,-NEUMO_COMPLETA)
+
+
+INFLU_COMPLETA<-svyby(~INFLU_COMPLETA, by=~CRED, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = INFLU_COMPLETA,vacunatipo = "INFLU_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(INFLU_COMPLETA)`,-INFLU_COMPLETA)
+
+
+ROTA_COMPLETA<-svyby(~ROTA_COMPLETA, by=~CRED, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = ROTA_COMPLETA,vacunatipo = "ROTA_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(ROTA_COMPLETA)`,-ROTA_COMPLETA)
+
+
+
+df2 <- bind_rows(PTV_COMPLETA,HIB_COMPLETA,NEUMO_COMPLETA,INFLU_COMPLETA,ROTA_COMPLETA)
+
+
+
+ggplot(data = df2, aes(x = vacunatipo, y = vacuna, fill = CRED)) +
+  
+  geom_col( position = position_dodge(width = 1), width = 0.8) +
+  
+  geom_errorbar(aes(ymin = ci_l, 
+                    ymax = ci_u), 
+                
+                position = position_dodge(width = 1), 
+                
+                width = 0.25) +
+  
+  
+  scale_fill_brewer(palette = 9) +
+  
+  theme_bw()
+```
+
+# PROPORCION POR LUGAR DONDE TIENE CRED
+
+```{r, echo=F, warning=F, message=F, error=F}
+PTV_COMPLETA<-svyby(~PTV_COMPLETA, by=~CREDLUGAR, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = PTV_COMPLETA,vacunatipo = "PTV_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(PTV_COMPLETA)`,-PTV_COMPLETA)
+
+
+HIB_COMPLETA<-svyby(~HIB_COMPLETA, by=~CREDLUGAR, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = HIB_COMPLETA,vacunatipo = "HIB_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(HIB_COMPLETA)`,-HIB_COMPLETA)
+
+
+NEUMO_COMPLETA<-svyby(~NEUMO_COMPLETA, by=~CREDLUGAR, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = NEUMO_COMPLETA,vacunatipo = "NEUMO_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(NEUMO_COMPLETA)`,-NEUMO_COMPLETA)
+
+
+INFLU_COMPLETA<-svyby(~INFLU_COMPLETA, by=~CREDLUGAR, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = INFLU_COMPLETA,vacunatipo = "INFLU_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(INFLU_COMPLETA)`,-INFLU_COMPLETA)
+
+
+ROTA_COMPLETA<-svyby(~ROTA_COMPLETA, by=~CREDLUGAR, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = ROTA_COMPLETA,vacunatipo = "ROTA_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(ROTA_COMPLETA)`,-ROTA_COMPLETA)
+
+
+
+df2 <- bind_rows(PTV_COMPLETA,HIB_COMPLETA,NEUMO_COMPLETA,INFLU_COMPLETA,ROTA_COMPLETA)
+
+ggplot(data = df2, aes(x = vacunatipo, y = vacuna, fill = CREDLUGAR)) +
+  
+  geom_col( position = position_dodge(width = 1), width = 0.8) +
+  
+  geom_errorbar(aes(ymin = ci_l, 
+                    ymax = ci_u), 
+                
+                position = position_dodge(width = 1), 
+                
+                width = 0.25) +
+  
+  
+  scale_fill_brewer(palette = 9) +
+  
+  theme_bw()
+
+```
+
+# TIPO DE RESIDENCIA 
+
+```{r, echo=F, warning=F, message=F, error=F}
+PTV_COMPLETA<-svyby(~PTV_COMPLETA, by=~TIPORESIDENCIA, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = PTV_COMPLETA,vacunatipo = "PTV_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(PTV_COMPLETA)`,-PTV_COMPLETA)
+
+
+HIB_COMPLETA<-svyby(~HIB_COMPLETA, by=~TIPORESIDENCIA, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = HIB_COMPLETA,vacunatipo = "HIB_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(HIB_COMPLETA)`,-HIB_COMPLETA)
+
+
+NEUMO_COMPLETA<-svyby(~NEUMO_COMPLETA, by=~TIPORESIDENCIA, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = NEUMO_COMPLETA,vacunatipo = "NEUMO_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(NEUMO_COMPLETA)`,-NEUMO_COMPLETA)
+
+
+INFLU_COMPLETA<-svyby(~INFLU_COMPLETA, by=~TIPORESIDENCIA, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = INFLU_COMPLETA,vacunatipo = "INFLU_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(INFLU_COMPLETA)`,-INFLU_COMPLETA)
+
+
+ROTA_COMPLETA<-svyby(~ROTA_COMPLETA, by=~TIPORESIDENCIA, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = ROTA_COMPLETA,vacunatipo = "ROTA_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(ROTA_COMPLETA)`,-ROTA_COMPLETA)
+
+
+
+df2 <- bind_rows(PTV_COMPLETA,HIB_COMPLETA,NEUMO_COMPLETA,INFLU_COMPLETA,ROTA_COMPLETA)
+
+
+
+ggplot(data = df2, aes(x = vacunatipo, y = vacuna, fill = TIPORESIDENCIA)) +
+  
+  geom_col( position = position_dodge(width = 1), width = 0.8) +
+  
+  geom_errorbar(aes(ymin = ci_l, 
+                    ymax = ci_u), 
+                
+                position = position_dodge(width = 1), 
+                
+                width = 0.25) +
+  
+  
+  scale_fill_brewer(palette = 9) +
+  
+  theme_bw()
+
+
+
+```
+
+# EDUCACION DE LA MADRE
+
+
+```{r, echo=F, warning=F, message=F, error=F}
+PTV_COMPLETA<-svyby(~PTV_COMPLETA, by=~EDU_MADRE, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = PTV_COMPLETA,vacunatipo = "PTV_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(PTV_COMPLETA)`,-PTV_COMPLETA)
+
+
+HIB_COMPLETA<-svyby(~HIB_COMPLETA, by=~EDU_MADRE, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = HIB_COMPLETA,vacunatipo = "HIB_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(HIB_COMPLETA)`,-HIB_COMPLETA)
+
+
+NEUMO_COMPLETA<-svyby(~NEUMO_COMPLETA, by=~EDU_MADRE, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = NEUMO_COMPLETA,vacunatipo = "NEUMO_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(NEUMO_COMPLETA)`,-NEUMO_COMPLETA)
+
+
+INFLU_COMPLETA<-svyby(~INFLU_COMPLETA, by=~EDU_MADRE, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = INFLU_COMPLETA,vacunatipo = "INFLU_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(INFLU_COMPLETA)`,-INFLU_COMPLETA)
+
+
+ROTA_COMPLETA<-svyby(~ROTA_COMPLETA, by=~EDU_MADRE, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = ROTA_COMPLETA,vacunatipo = "ROTA_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(ROTA_COMPLETA)`,-ROTA_COMPLETA)
+
+
+
+df2 <- bind_rows(PTV_COMPLETA,HIB_COMPLETA,NEUMO_COMPLETA,INFLU_COMPLETA,ROTA_COMPLETA)
+
+
+
+ggplot(data = df2, aes(x = vacunatipo, y = vacuna, fill = EDU_MADRE)) +
+  
+  geom_col( position = position_dodge(width = 1), width = 0.8) +
+  
+  geom_errorbar(aes(ymin = ci_l, 
+                    ymax = ci_u), 
+                
+                position = position_dodge(width = 1), 
+                
+                width = 0.25) +
+  
+  
+  scale_fill_brewer(palette = 9) +
+  
+  theme_bw()
+
+
+```
+
+# INDICE DE RIQUEZA
+
+```{r, echo=F, warning=F, message=F, error=F}
+PTV_COMPLETA<-svyby(~PTV_COMPLETA, by=~INDICERIQUEZA, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = PTV_COMPLETA,vacunatipo = "PTV_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(PTV_COMPLETA)`,-PTV_COMPLETA)
+
+
+HIB_COMPLETA<-svyby(~HIB_COMPLETA, by=~INDICERIQUEZA, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = HIB_COMPLETA,vacunatipo = "HIB_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(HIB_COMPLETA)`,-HIB_COMPLETA)
+
+
+NEUMO_COMPLETA<-svyby(~NEUMO_COMPLETA, by=~INDICERIQUEZA, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = NEUMO_COMPLETA,vacunatipo = "NEUMO_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(NEUMO_COMPLETA)`,-NEUMO_COMPLETA)
+
+
+INFLU_COMPLETA<-svyby(~INFLU_COMPLETA, by=~INDICERIQUEZA, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = INFLU_COMPLETA,vacunatipo = "INFLU_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(INFLU_COMPLETA)`,-INFLU_COMPLETA)
+
+
+ROTA_COMPLETA<-svyby(~ROTA_COMPLETA, by=~INDICERIQUEZA, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = ROTA_COMPLETA,vacunatipo = "ROTA_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(ROTA_COMPLETA)`,-ROTA_COMPLETA)
+
+
+
+df2 <- bind_rows(PTV_COMPLETA,HIB_COMPLETA,NEUMO_COMPLETA,INFLU_COMPLETA,ROTA_COMPLETA)
+
+
+
+ggplot(data = df2, aes(x = vacunatipo, y = vacuna, fill = as.factor(INDICERIQUEZA))) +
+  
+  geom_col( position = position_dodge(width = 1), width = 0.8) +
+  
+  geom_errorbar(aes(ymin = ci_l, 
+                    ymax = ci_u), 
+                
+                position = position_dodge(width = 1), 
+                
+                width = 0.25) +
+  
+  
+  scale_fill_brewer(palette = 9) +
+  
+  theme_bw()
+
+
+```
+
+# ETINIA MADRE
+
+```{r, echo=F, warning=F, message=F, error=F}
+PTV_COMPLETA<-svyby(~PTV_COMPLETA, by=~ETNIA_MADRE, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = PTV_COMPLETA,vacunatipo = "PTV_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(PTV_COMPLETA)`,-PTV_COMPLETA)
+
+
+HIB_COMPLETA<-svyby(~HIB_COMPLETA, by=~ETNIA_MADRE, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = HIB_COMPLETA,vacunatipo = "HIB_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(HIB_COMPLETA)`,-HIB_COMPLETA)
+
+
+NEUMO_COMPLETA<-svyby(~NEUMO_COMPLETA, by=~ETNIA_MADRE, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = NEUMO_COMPLETA,vacunatipo = "NEUMO_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(NEUMO_COMPLETA)`,-NEUMO_COMPLETA)
+
+
+INFLU_COMPLETA<-svyby(~INFLU_COMPLETA, by=~ETNIA_MADRE, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = INFLU_COMPLETA,vacunatipo = "INFLU_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(INFLU_COMPLETA)`,-INFLU_COMPLETA)
+
+
+ROTA_COMPLETA<-svyby(~ROTA_COMPLETA, by=~ETNIA_MADRE, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = ROTA_COMPLETA,vacunatipo = "ROTA_COMPLETA") %>% 
+  
+  select(-`se.as.numeric(ROTA_COMPLETA)`,-ROTA_COMPLETA)
+
+
+
+df2 <- bind_rows(PTV_COMPLETA,HIB_COMPLETA,NEUMO_COMPLETA,INFLU_COMPLETA,ROTA_COMPLETA)
+
+mycolors <- colorRampPalette(brewer.pal(1, "Set2"))(12)
+
+ggplot(data = df2, aes(x = vacunatipo, y = vacuna, fill = as.factor(ETNIA_MADRE))) +
+  
+  geom_col( position = position_dodge(width = 1), width = 0.8) +
+  
+  geom_errorbar(aes(ymin = ci_l, 
+                    ymax = ci_u), 
+                
+                position = position_dodge(width = 1), 
+                
+                width = 0.25) +
+  
+  
+  scale_fill_manual(values = mycolors) + 
+  
+  theme_bw()
+
+```
