@@ -30,8 +30,7 @@ HOGAR1 <- read.csv("ENDES/RECH0.csv", sep = ";" )
 HOGAR_MADRE <- read.csv("ENDES/RECH1.csv", sep = ";" )
 VIVIENDA1 <- read.csv("ENDES/RECH23.csv", sep = ";" )
 MUJER2<- read.csv("ENDES/REC0111.csv", sep = ";" )
-
-
+NINIO_ANEMIA<- read.csv("ENDES/RECH6.csv", sep = ";" )
 region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 
 
@@ -42,22 +41,56 @@ region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 ```{r, warning=F, message=F, error=F}
 # BD principales
 
-VACUNA1 <- VACUNA1 %>% select(CASEID,H1:H10) %>% mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+## HHID Y HIDX son las variables de union 
 
-VACUNA2 <- VACUNA2 %>% select(CASEID,S466,S466B,S45D4:S45IF2Y) %>% mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+VACUNA1 <- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = IDX95) 
 
 
 # Otras BD
-NINIO <- NINIO %>% select(CASEID,QI478,BIDX) %>% mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-NINIO2 <- NINIO2 %>% select(CASEID,M15) %>% mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+## HHID Y HIDX son las variables de union 
 
-MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V131,V190) %>% mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+NINIO <- NINIO %>% select(CASEID,QI478,BIDX,BORD) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = BIDX) 
 
-HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,QH25A,HV122)
 
+NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = MIDX) 
+
+
+
+MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V131,V190) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,QH25A,HV122) %>% 
+  
+  mutate(HIDX = HVIDX)
+
+# NINIO_ANEMIA <- NINIO_ANEMIA %>% select(HHID,HC0,HC1)
 
 # Caracteristicas por Hogar
 
@@ -73,37 +106,36 @@ VIVIENDA1<- VIVIENDA1 %>% select(HHID,HV270)
 ```{r, warning=F, message=F, error=F}
 
 ## BD intermedias
-VACUNA_2020 <- VACUNA1 %>% full_join(VACUNA2, by =c("HHID","CASEID")) 
+VACUNA_2020 <- VACUNA1 %>% full_join(VACUNA2, by =c("HHID","HIDX","CASEID")) # Union tomando CASEID para no perder casos
 
-NINIO_2020 <- NINIO %>% left_join(NINIO2, by = c("HHID","CASEID"))
+NINIO_2020 <- NINIO %>% left_join(NINIO2, by = c("HHID","HIDX","CASEID"))
+
+
 
 MUJER_2021 <- MUJER1 %>% 
   
-  left_join(MUJER2, by = c("HHID","CASEID")) %>%
+  left_join(MUJER2, by = c("HHID","CASEID")) %>% 
+  mutate(HIDX = as.numeric(str_sub(CASEID,-2,-1))) %>% 
   
-  left_join(HOGAR_MADRE, by = "HHID")
+  left_join(HOGAR_MADRE, by = c("HHID","HIDX"))
 
 
 ## BD final
 MOV2020<- VACUNA_2020 %>% 
   
-  left_join(NINIO_2020, by = c("HHID","CASEID")) %>% 
+  left_join(NINIO_2020, by = c("HHID","HIDX","CASEID")) %>% 
   
-  left_join(MUJER_2021, by = c("HHID","CASEID")) %>% group_by(CASEID) %>% slice(1) %>% filter(!is.na(H1)) %>% ungroup() 
-
-
-
-
-
+  left_join(MUJER_2021, by = c("HHID","CASEID")) %>% 
+  
+  # FILTRO DE LOS NA POR EDAD
+  filter(!is.na(QI478))
 
 ```
 
 # EDITADO
 
-
-
 ```{r,warning=F, message=F, error=F}
-MOV2020_2 <-MOV2020 %>%
+prep.data <-function(MOV2020){ MOV2020 %>%
   
   select(CASEID,
          # H1,H2,H3,H4,H5,H6,H7,H8,H9,H10,
@@ -131,7 +163,7 @@ MOV2020_2 <-MOV2020 %>%
     
     
          
-         CRED = as.factor(ifelse(S466==0,"No","Si")),
+         CRED = as.factor(ifelse(S466==0 | S466 == 8,"No","Si")),
          
          
          CREDLUGAR = factor(S466B, levels = c(21,22,23,24,
@@ -187,16 +219,43 @@ MOV2020_2 <-MOV2020 %>%
                                              
                                              )) %>% 
   
+   # CON CRED O SEGURO
+   filter((CRED == "Si" | SEGURO == "Si")) %>% 
   
-  filter(!is.na(EDAD_ANIOS)) %>% 
   
   
-  mutate( HIB_COMPLETA = as.factor(ifelse(S45F1 !=0 & S45F2 != 0 & S45F3 != 0,1,0)),
+  mutate( HIB_COMPLETA = as.factor(ifelse(S45F1 !=0 & S45F2 != 0 & S45F3 != 0,1,0)), # VACUNAS COMPLETAS
           PTV_COMPLETA = as.factor(ifelse(S45PV1 !=0 & S45PV2 != 0 & S45PV3 != 0,1,0)),
           NEUMO_COMPLETA = as.factor(ifelse(S45NM1 !=0 & S45NM2 != 0 & S45NM3 != 0,1,0)),
           INFLU_COMPLETA = as.factor(ifelse(S45IF1 !=0 & S45IF2 != 0,1,0)),
-          ROTA_COMPLETA = as.factor(ifelse(S45RT1 !=0 & S45RT2 != 0,1,0))) 
-  
+          ROTA_COMPLETA = as.factor(ifelse(S45RT1 !=0 & S45RT2 != 0,1,0)),
+          
+          
+          # Inicio de esquemas 
+          ## Pentavalente
+          MOV_PTV_e1 = ifelse(QI478<12 & S45PV1==0,1,0),
+          MOV_PTV_e2 = ifelse(QI478>12 & S45PV1==0,1,0),
+          MOV_PTV_e1_2= ifelse(MOV_PTV_e1 ==1 | MOV_PTV_e2 == 1,1,0),
+          
+          ## Neumococo 
+          MOV_NEUMO_e1 = ifelse(QI478<12 & S45NM1==0,1,0),
+          MOV_NEUMO_e2 = ifelse(QI478>12 & S45NM1==0,1,0),
+          MOV_NEUMO_e1_2 = ifelse(MOV_NEUMO_e1==1 | MOV_NEUMO_e2==1,1,0),
+          
+          ## Rotavirus (entre 2 y 4 meses, maximo 7 meses la 2da dosis)
+          MOV_ROTA_e1 = ifelse(QI478>8 & S45RT2 == 0,1,0),
+          
+          ## INFLUENZA (<12 m : 2 dosis, 12-35 meses:1 dosis, >36 meses: 1 dosis adulto)
+          
+          MOV_INFLU_e1 = ifelse(QI478<12 & S45NM2 == 0,1,0),
+          MOV_INFLU_e2 = ifelse(QI478>12 & S45NM1 == 0,1,0),
+          MOV_INFLU_e1_2 = ifelse(MOV_INFLU_e1 == 1 | MOV_INFLU_e2==1, 1,0))
+          
+}
+
+
+# Datos listos
+MOV_2020_2<- prep.data(MOV2020)
 ```
 
 # RESUMEN 
@@ -218,68 +277,43 @@ options(survey.lonely.psu="remove")
 # PROPORCIONES POR REGIONES (GRAFICO)
 
 ```{r, echo=F, warning=F, message=F, error=F, fig.height= 10, fig.width= 10}
-PTV_COMPLETA<-svyby(~PTV_COMPLETA, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
-  
-  mutate(vacuna = PTV_COMPLETA,vacunatipo = "PTV_COMPLETA") %>% 
-  
-  select(-`se.as.numeric(PTV_COMPLETA)`,-PTV_COMPLETA)
 
 
-HIB_COMPLETA<-svyby(~HIB_COMPLETA, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+
+PTV_COMPLETA<-svyby(~MOV_PTV_e1_2, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
   
-  mutate(vacuna = HIB_COMPLETA,vacunatipo = "HIB_COMPLETA") %>% 
+  mutate(vacuna = MOV_PTV_e1_2,vacunatipo = "PTV_COMPLETA") %>% 
   
-  select(-`se.as.numeric(HIB_COMPLETA)`,-HIB_COMPLETA)
+  select(-`se.as.numeric(MOV_PTV_e1_2)`,-MOV_PTV_e1_2)
 
 
-NEUMO_COMPLETA<-svyby(~NEUMO_COMPLETA, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+NEUMO_COMPLETA<-svyby(~MOV_NEUMO_e1_2, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
   
-  mutate(vacuna = NEUMO_COMPLETA,vacunatipo = "NEUMO_COMPLETA") %>% 
+  mutate(vacuna = MOV_NEUMO_e1_2,vacunatipo = "NEUMO_COMPLETA") %>% 
   
-  select(-`se.as.numeric(NEUMO_COMPLETA)`,-NEUMO_COMPLETA)
+  select(-`se.as.numeric(MOV_NEUMO_e1_2)`,-MOV_NEUMO_e1_2)
 
 
-INFLU_COMPLETA<-svyby(~INFLU_COMPLETA, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+INFLU_COMPLETA<-svyby(~MOV_INFLU_e1_2, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
   
-  mutate(vacuna = INFLU_COMPLETA,vacunatipo = "INFLU_COMPLETA") %>% 
+  mutate(vacuna = MOV_INFLU_e1_2,vacunatipo = "INFLU_COMPLETA") %>% 
   
-  select(-`se.as.numeric(INFLU_COMPLETA)`,-INFLU_COMPLETA)
+  select(-`se.as.numeric(MOV_INFLU_e1_2)`,-MOV_INFLU_e1_2) 
 
 
-ROTA_COMPLETA<-svyby(~ROTA_COMPLETA, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+ROTA_COMPLETA<-svyby(~MOV_ROTA_e1, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
   
-  mutate(vacuna = ROTA_COMPLETA,vacunatipo = "ROTA_COMPLETA") %>% 
+  mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA_COMPLETA") %>% 
   
-  select(-`se.as.numeric(ROTA_COMPLETA)`,-ROTA_COMPLETA)
+  select(-`se.as.numeric(MOV_ROTA_e1)`,-MOV_ROTA_e1)
 
 
 
 df2 <- bind_rows(PTV_COMPLETA,NEUMO_COMPLETA,INFLU_COMPLETA,ROTA_COMPLETA) %>% full_join(region_shape, by = c("DEPARTAMEN"))
 
 
-# gg<-function(df2){
-#   
-#   ggplot(data = df2, mapping = aes(x = as.factor(DEPARTAMEN),y = vacuna, ymin = ci_l, ymax = ci_u)) +
-#   
-#   
-#   geom_pointrange() +
-#   
-#   geom_linerange(aes(ymin=ci_l, ymax=ci_u),width=0.5,cex=1) +
-#   
-#   geom_hline(yintercept = 0.95, linetype = 2) + 
-#   
-#   theme_minimal() + 
-#   
-#   coord_flip() }
-# 
-#   
-# grafico<-df2 %>% group_by(vacunatipo) %>% nest() %>% mutate(grafico = map(.x =data, .f = ~gg(.x)))
 
-
-#cowplot::plot_grid(plotlist = grafico$grafico)
-
-
-ggplot(data = st_as_sf(df2) %>% mutate(vacuna = vacuna*100,
+grafico.region<- function(df2) { ggplot(data = st_as_sf(df2) %>% mutate(vacuna = vacuna*100,
                                        vacuna_cut = cut_interval(vacuna, n = 6))) +
   
   geom_sf(aes(fill = vacuna)) +
@@ -288,6 +322,12 @@ ggplot(data = st_as_sf(df2) %>% mutate(vacuna = vacuna*100,
   
   
   facet_wrap(facets = ~vacunatipo)
+  
+  }
+
+
+grafico.region(df2)
+
 
 
 ```
@@ -766,7 +806,7 @@ ggplot(data = st_as_sf(df2) %>% mutate(vacuna = vacuna*100,
 
 
 # EDAD MADRE
-```{r, echo=F, warning=F, message=F, error=F, fig.width= 15, fig.height= 15}
+```{r, echo=F, warning=F, message=F, error=F, fig.width= 10, fig.height= 10}
 PTV_COMPLETA<-svyby(~PTV_COMPLETA, by=~EDAD_MADRE + DEPARTAMEN,design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
   
   mutate(vacuna = PTV_COMPLETA,vacunatipo = "PTV_COMPLETA") %>% 
@@ -817,6 +857,13 @@ ggplot(data = st_as_sf(df2) %>% mutate(vacuna = vacuna*100,
   facet_wrap(facets = ~EDAD_MADRE + vacunatipo, nrow = 2) +
   
   theme_bw()
+```
+
+
+# TBL_SVYSUMMARY
+
+```{r}
+df %>% gtsummary::tbl_svysummary(include = c(HIB_COMPLETA:ROTA_COMPLETA))
 ```
 
 
