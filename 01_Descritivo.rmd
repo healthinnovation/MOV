@@ -90,14 +90,13 @@ HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,QH25A,HV122) %>%
   
   mutate(HIDX = HVIDX)
 
-# NINIO_ANEMIA <- NINIO_ANEMIA %>% select(HHID,HC0,HC1)
+NINIO_ANEMIA <- NINIO_ANEMIA %>% select(HHID,HC0,HC1)
 
 # Caracteristicas por Hogar
 
 HOGAR1<- HOGAR1 %>% select(HHID,HV003,HV000:HV002A,HV005,HV022,HV007,HV008,HV021,HV023:HV026) 
 VIVIENDA1<- VIVIENDA1 %>% select(HHID,HV270)
 #
-
 
 ```
 
@@ -265,7 +264,7 @@ V022 : ESTRATO
 V005 : FACTOR DE PONDERACION MUJER
 
 ```{r,warning=F, message=F, error=F}
-df <- svydesign(id =~ V001, strata =~ V022, weights=~V005, data=MOV2020_2) 
+df <- svydesign(id =~ V001, strata =~ V022, probs=~V005, data=MOV2020_2) 
 
 
 options(survey.lonely.psu="remove")
