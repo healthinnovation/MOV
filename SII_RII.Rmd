@@ -30,10 +30,13 @@ total.dep<-svytotal(~DEPARTAMEN,df) %>%
 
 total.dep2<-total.casos %>% full_join(total.dep, by = "DEPARTAMEN") %>% 
   
+  arrange(casos.mov.ptv) %>% 
+  
   select(DEPARTAMEN,total,casos.mov.ptv) %>% 
   
-  mutate(prop.share= casos.mov.ptv/sum(total))
+  mutate(prop.share= casos.mov.ptv/sum(casos.mov.ptv))
   
-total.dep2 %>% arrange()
+
+sum(tota)
 ```
 
