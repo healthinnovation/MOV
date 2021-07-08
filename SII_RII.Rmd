@@ -1,0 +1,39 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r}
+
+total.casos<-
+  svyby(~MOV_PTV_e1_2, by=~DEPARTAMEN, design =df, FUN=svytotal, vartype=c('se','ci')) %>% 
+  
+  data.frame() %>%
+  
+  mutate(casos.mov.ptv= MOV_PTV_e1_2) %>% 
+    
+  select(-MOV_PTV_e1_2)
+
+
+
+
+
+total.dep<-svytotal(~DEPARTAMEN,df) %>% 
+  
+  data.frame() %>% 
+  
+  bind_cols(MOV2020_2$DEPARTAMEN %>% unique()) %>% 
+  
+  mutate(DEPARTAMEN = ...3) %>% select(-...3)
+
+
+
+total.dep2<-total.casos %>% full_join(total.dep, by = "DEPARTAMEN") %>% 
+  
+  select(DEPARTAMEN,total,casos.mov.ptv) %>% 
+  
+  mutate(prop.share= casos.mov.ptv/sum(total))
+  
+total.dep2 %>% arrange()
+```
+
