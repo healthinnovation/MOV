@@ -258,6 +258,8 @@ prep.data <-function(MOV2020){ MOV2020 %>%
 
 # Datos listos
 MOV2020_2<- prep.data(MOV2020)
+
+write.csv(MOV2020_2,"./BD.INTERMEDIAS/MOV2020_2.csv",row.names = F)
 ```
 
 # RESUMEN 
@@ -267,6 +269,14 @@ V022 : ESTRATO
 V005 : FACTOR DE PONDERACION MUJER
 
 ```{r,warning=F, message=F, error=F}
+
+# Eliminando bases que no se usan
+rm(list=ls())
+
+# Base de trabajo
+MOV2020_2 <- read.csv("./BD.INTERMEDIAS/MOV2020_2.csv")
+
+#BD en survey
 df <- svydesign(id =~ V001, strata =~ V022, probs=~V005, data=MOV2020_2) 
 
 

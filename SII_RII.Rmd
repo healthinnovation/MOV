@@ -2,11 +2,15 @@
 title: "Untitled"
 output: html_document
 ---
+# Preparando los datos
 
 ```{r}
 
+
+# Total de casos del evento 
+
 total.casos<-
-  svyby(~MOV_PTV_e1_2, by=~DEPARTAMEN, design =df, FUN=svytotal, vartype=c('se','ci')) %>% 
+  svyby(~MOV_PTV_e1_2, by=~DEPARTAMEN, design =df, FUN=svytotal) %>% 
   
   data.frame() %>%
   
@@ -16,9 +20,9 @@ total.casos<-
 
 
 
-
-
-total.dep<-svytotal(~DEPARTAMEN,df) %>% 
+# Total de personas en cada estrato
+total.dep<-
+  svytotal(~DEPARTAMEN,df) %>% 
   
   data.frame() %>% 
   
@@ -27,16 +31,51 @@ total.dep<-svytotal(~DEPARTAMEN,df) %>%
   mutate(DEPARTAMEN = ...3) %>% select(-...3)
 
 
-
-total.dep2<-total.casos %>% full_join(total.dep, by = "DEPARTAMEN") %>% 
+# Union de bases y calculo del HR
+total.dep2<-
+  total.casos %>% full_join(total.dep, by = "DEPARTAMEN") %>% 
   
   arrange(casos.mov.ptv) %>% 
   
   select(DEPARTAMEN,total,casos.mov.ptv) %>% 
   
-  mutate(prop.share= casos.mov.ptv/sum(casos.mov.ptv))
+  mutate(pop= casos.mov.ptv/sum(casos.mov.ptv),
+         
+         popr = cumsum(pop)/sum(pop),
+         pop.popr = popr - pop,
+         hr2 = round((pop.popr + popr)/2,3),
+         mean.hp = round(sum(casos.mov.ptv)/sum(total),2)) %>% 
+  
+  select(-pop,-popr,-pop.popr) %>% filter(!DEPARTAMEN == "MADRE DE DIOS")
   
 
-sum(tota)
+
+
 ```
+
+# GRAFICO, SSI y RII
+
+## GRAFICO Y SSI
+```{r}
+
+# Grafico para verificar linealidad
+ggplot(data = total.dep2, aes(x = casos.mov.ptv, y = hr2)) +
+  
+  geom_point() 
+
+
+ssi <- lm(casos.mov.ptv ~ hr2, data = total.dep2)
+
+jtools::summ(ssi, exp = T, confint = T, robust = T)
+
+```
+
+## RII
+
+```{r}
+bd <- data.frame(hr2 = c(0,1))
+
+RRI<-predict(ssi,newdata = bd %>% filter(hr2 == 1))/predict(ssi,newdata = bd %>% filter(hr2 == 0))
+```
+
 
