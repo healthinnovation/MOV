@@ -21,29 +21,29 @@ library(survey)
 library(RColorBrewer)
 library(sf)
 
-NINIO <- read.csv("ENDES/DIT.csv", sep = ";" )
-NINIO2 <- read.csv("ENDES/REC41.csv", sep = ";" )
-MUJER1 <- read.csv("ENDES/REC42.csv", sep = ";" )
-VACUNA1 <- read.csv("ENDES/REC43.csv", sep = ";" )
-VACUNA2 <- read.csv("ENDES/REC95.csv", sep = ";" )
-HOGAR1 <- read.csv("ENDES/RECH0.csv", sep = ";" )
-HOGAR_MADRE <- read.csv("ENDES/RECH1.csv", sep = ";" )
-VIVIENDA1 <- read.csv("ENDES/RECH23.csv", sep = ";" )
-MUJER2<- read.csv("ENDES/REC0111.csv", sep = ";" )
-NINIO_ANEMIA<- read.csv("ENDES/RECH6.csv", sep = ";" )
+NINIO <- read.csv("ENDES/2020/DIT.csv", sep = ";" )
+NINIO2 <- read.csv("ENDES/2020/REC41.csv", sep = ";" )
+MUJER1 <- read.csv("ENDES/2020/REC42.csv", sep = ";" )
+VACUNA1 <- read.csv("ENDES/2020/REC43.csv", sep = ";" )
+VACUNA2 <- read.csv("ENDES/2020/REC95.csv", sep = ";" )
+HOGAR1 <- read.csv("ENDES/2020/RECH0.csv", sep = ";" )
+HOGAR_MADRE <- read.csv("ENDES/2020/RECH1.csv", sep = ";" )
+VIVIENDA1 <- read.csv("ENDES/2020/RECH23.csv", sep = ";" )
+MUJER2<- read.csv("ENDES/2020/REC0111.csv", sep = ";" )
+NINIO_ANEMIA<- read.csv("ENDES/2020/RECH6.csv", sep = ";" )
 region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
-
 
 
 ```
 
 # PRE UNION
 ```{r, warning=F, message=F, error=F}
+
 # BD principales
 
 ## HHID Y HIDX son las variables de union 
 
-VACUNA1 <- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
@@ -90,13 +90,16 @@ HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,QH25A,HV122) %>%
   
   mutate(HIDX = HVIDX)
 
-NINIO_ANEMIA <- NINIO_ANEMIA %>% select(HHID,HC0,HC1)
 
-# Caracteristicas por Hogar
 
-HOGAR1<- HOGAR1 %>% select(HHID,HV003,HV000:HV002A,HV005,HV022,HV007,HV008,HV021,HV023:HV026) 
-VIVIENDA1<- VIVIENDA1 %>% select(HHID,HV270)
+# NINIO_ANEMIA <- NINIO_ANEMIA %>% select(HHID,HC0,HC1)
+# 
+# # Caracteristicas por Hogar
+# 
+# HOGAR1<- HOGAR1 %>% select(HHID,HV003,HV000:HV002A,HV005,HV022,HV007,HV008,HV021,HV023:HV026) 
+# VIVIENDA1<- VIVIENDA1 %>% select(HHID,HV270)
 #
+
 
 ```
 
