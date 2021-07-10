@@ -2,13 +2,32 @@
 title: "Untitled"
 output: html_document
 ---
-# Preparando los datos
 
 ```{r}
 
+library(tidyverse)
+library(survey)
+```
 
+```{r}
+# Base de trabajo
+MOV2020_2 <- read.csv("./BD.INTERMEDIAS/MOV2020_2.csv")
+
+#BD en survey
+df <- svydesign(id =~ V001, strata =~ V022, probs=~V005, data=MOV2020_2) 
+
+
+options(survey.lonely.psu="remove")
+```
+
+# DEPARTAMENTOS
+
+## Preparando los datos
+
+```{r}
 # Total de casos del evento 
 
+    
 total.casos<-
   svyby(~MOV_PTV_e1_2, by=~DEPARTAMEN, design =df, FUN=svytotal) %>% 
   
@@ -18,64 +37,306 @@ total.casos<-
     
   select(-MOV_PTV_e1_2)
 
-
-
-# Total de personas en cada estrato
-total.dep<-
-  svytotal(~DEPARTAMEN,df) %>% 
-  
-  data.frame() %>% 
-  
-  bind_cols(MOV2020_2$DEPARTAMEN %>% unique()) %>% 
-  
-  mutate(DEPARTAMEN = ...3) %>% select(-...3)
-
-
 # Union de bases y calculo del HR
 total.dep2<-
-  total.casos %>% full_join(total.dep, by = "DEPARTAMEN") %>% 
+  total.casos %>% 
+  
+  #full_join(total.dep, by = "DEPARTAMEN") %>% 
   
   arrange(casos.mov.ptv) %>% 
   
-  select(DEPARTAMEN,total,casos.mov.ptv) %>% 
+  #select(DEPARTAMEN,casos.mov.ptv) %>% 
   
   mutate(pop= casos.mov.ptv/sum(casos.mov.ptv),
          
          popr = cumsum(pop)/sum(pop),
          pop.popr = popr - pop,
-         hr2 = round((pop.popr + popr)/2,3),
-         mean.hp = round(sum(casos.mov.ptv)/sum(total),2)) %>% 
+         hr2 = round((pop.popr + popr)/2,3)
+         ) %>% 
   
-  select(-pop,-popr,-pop.popr) %>% filter(!DEPARTAMEN == "MADRE DE DIOS")
-  
+  select(-pop,-popr,-pop.popr) %>% 
+         filter(DEPARTAMEN != "MADRE DE DIOS") 
 
+  
+  
 
 
 ```
 
-# GRAFICO, SSI y RII
+## GRAFICO, SSI y RII
 
-## GRAFICO Y SSI
+### GRAFICO Y SSI
+
 ```{r}
 
 # Grafico para verificar linealidad
-ggplot(data = total.dep2, aes(x = casos.mov.ptv, y = hr2)) +
+ggplot(data = total.dep2 , aes(x =hr2 , y = casos.mov.ptv)) +
   
-  geom_point() 
+  geom_point() +
+  
+  geom_smooth(method = "lm")
 
 
 ssi <- lm(casos.mov.ptv ~ hr2, data = total.dep2)
 
-jtools::summ(ssi, exp = T, confint = T, robust = T)
+jtools::summ(ssi, confint = T, robust = T)
 
 ```
 
-## RII
+### RII
 
 ```{r}
 bd <- data.frame(hr2 = c(0,1))
 
 RRI<-predict(ssi,newdata = bd %>% filter(hr2 == 1))/predict(ssi,newdata = bd %>% filter(hr2 == 0))
+
+
+depa.ssi<-c(Variable="DEPARTAMENTO",SSI=round(ssi$coefficients[2],1),RRI=round(RRI[1],2))
+depa.ssi
 ```
 
+# CRED LUGAR
 
+```{r}
+total.casos<-
+  svyby(~MOV_PTV_e1_2, by=~CREDLUGAR, design =df, FUN=svytotal) %>% 
+  
+  data.frame() %>%
+  
+  mutate(casos.mov.ptv= MOV_PTV_e1_2) %>% 
+    
+  select(-MOV_PTV_e1_2)
+
+
+
+# Union de bases y calculo del HR
+total.dep2<-
+  total.casos %>% 
+  
+  arrange(casos.mov.ptv) %>% 
+  
+  select(CREDLUGAR,casos.mov.ptv) %>% 
+  
+  mutate(pop= casos.mov.ptv/sum(casos.mov.ptv),
+         
+         popr = cumsum(pop)/sum(pop),
+         pop.popr = popr - pop,
+         hr2 = round((pop.popr + popr)/2,3)) %>% 
+         
+  
+  select(-pop,-popr,-pop.popr) %>% filter(CREDLUGAR != "NoCRED")
+
+
+
+
+```
+
+```{r}
+# Grafico para verificar linealidad
+ggplot(data = total.dep2, aes(x =hr2 , y = casos.mov.ptv)) +
+  
+  geom_point() +
+  
+  geom_smooth(method = "lm")
+
+
+ssi <- lm(casos.mov.ptv ~ hr2, data = total.dep2)
+
+jtools::summ(ssi, confint = T, robust = T)
+```
+
+```{r}
+bd <- data.frame(hr2 = c(0,1))
+
+RRI<-predict(ssi,newdata = bd %>% filter(hr2 == 1))/predict(ssi,newdata = bd %>% filter(hr2 == 0))
+
+
+credtipo.ssi<-c(Variable="DEPARTAMENTO",SSI=round(ssi$coefficients[2],1),RRI=round(RRI[1],2))
+credtipo.ssi
+
+
+```
+
+# EDUCACION DE LA MADRE
+
+```{r}
+total.casos<-
+  svyby(~MOV_PTV_e1_2, by=~EDU_MADRE, design =df, FUN=svytotal) %>% 
+  
+  data.frame() %>%
+  
+  mutate(casos.mov.ptv= MOV_PTV_e1_2) %>% 
+    
+  select(-MOV_PTV_e1_2)
+
+
+
+# Union de bases y calculo del HR
+total.dep2<-
+  total.casos %>% 
+  
+  arrange(casos.mov.ptv) %>% 
+  
+  select(EDU_MADRE,casos.mov.ptv) %>% 
+  
+  mutate(pop= casos.mov.ptv/sum(casos.mov.ptv),
+         
+         popr = cumsum(pop)/sum(pop),
+         pop.popr = popr - pop,
+         hr2 = round((pop.popr + popr)/2,3)) %>% 
+         
+  
+  select(-pop,-popr,-pop.popr)
+
+
+
+
+```
+
+```{r}
+# Grafico para verificar linealidad
+ggplot(data = total.dep2, aes(x = casos.mov.ptv, y = hr2)) +
+  
+  geom_point() +
+  
+  geom_smooth(method = "lm")
+
+
+ssi <- lm(casos.mov.ptv ~ hr2, data = total.dep2)
+
+jtools::summ(ssi, confint = T, robust = T)
+```
+
+```{r}
+bd <- data.frame(hr2 = c(0,1))
+
+RRI<-predict(ssi,newdata = bd %>% filter(hr2 == 1))/predict(ssi,newdata = bd %>% filter(hr2 == 0))
+
+
+edumadre.ssi<-c(Variable="DEPARTAMENTO",SSI=round(ssi$coefficients[2],1),RRI=round(RRI[1],2))
+edumadre.ssi
+
+
+```
+
+# INDICE RIQUEZA
+
+```{r}
+total.casos<-
+  svyby(~MOV_PTV_e1_2, by=~INDICERIQUEZA, design =df, FUN=svytotal) %>% 
+  
+  data.frame() %>%
+  
+  mutate(casos.mov.ptv= MOV_PTV_e1_2) %>% 
+    
+  select(-MOV_PTV_e1_2)
+
+
+
+# Union de bases y calculo del HR
+total.dep2<-
+  total.casos %>% 
+  
+  arrange(casos.mov.ptv) %>% 
+  
+  select(INDICERIQUEZA,casos.mov.ptv) %>% 
+  
+  mutate(pop= casos.mov.ptv/sum(casos.mov.ptv),
+         
+         popr = cumsum(pop)/sum(pop),
+         pop.popr = popr - pop,
+         hr2 = round((pop.popr + popr)/2,3)) %>% 
+         
+  
+  select(-pop,-popr,-pop.popr)
+
+
+
+
+```
+
+```{r}
+# Grafico para verificar linealidad
+ggplot(data = total.dep2, aes(x = casos.mov.ptv, y = hr2)) +
+  
+  geom_point() +
+  
+  geom_smooth(method = "lm")
+
+
+ssi <- lm(casos.mov.ptv ~ hr2, data = total.dep2)
+
+jtools::summ(ssi, confint = T, robust = T)
+```
+
+```{r}
+bd <- data.frame(hr2 = c(0,1))
+
+RRI<-predict(ssi,newdata = bd %>% filter(hr2 == 1))/predict(ssi,newdata = bd %>% filter(hr2 == 0))
+
+
+riqueza.ssi<-c(Variable="DEPARTAMENTO",SSI=round(ssi$coefficients[2],1),RRI=round(RRI[1],2))
+riqueza.ssi
+
+```
+
+# EDAD MADRE
+
+```{r}
+total.casos<-
+  svyby(~MOV_PTV_e1_2, by=~EDAD_MADRE, design =df, FUN=svytotal) %>% 
+  
+  data.frame() %>%
+  
+  mutate(casos.mov.ptv= MOV_PTV_e1_2) %>% 
+    
+  select(-MOV_PTV_e1_2)
+
+
+
+# Union de bases y calculo del HR
+total.dep2<-
+  total.casos %>% 
+  
+  arrange(casos.mov.ptv) %>% 
+  
+  select(EDAD_MADRE,casos.mov.ptv) %>% 
+  
+  mutate(pop= casos.mov.ptv/sum(casos.mov.ptv),
+         
+         popr = cumsum(pop)/sum(pop),
+         pop.popr = popr - pop,
+         hr2 = round((pop.popr + popr)/2,3)) %>% 
+         
+  
+  select(-pop,-popr,-pop.popr)
+
+
+
+
+```
+
+```{r}
+# Grafico para verificar linealidad
+ggplot(data = total.dep2, aes(x = casos.mov.ptv, y = hr2)) +
+  
+  geom_point() +
+  
+  geom_smooth(method = "lm")
+
+
+ssi <- lm(casos.mov.ptv ~ hr2, data = total.dep2)
+
+jtools::summ(ssi, confint = T, robust = T)
+```
+
+```{r}
+bd <- data.frame(hr2 = c(0,1))
+
+RRI<-predict(ssi,newdata = bd %>% filter(hr2 == 1))/predict(ssi,newdata = bd %>% filter(hr2 == 0))
+
+
+edad.ssi<-c(Variable="DEPARTAMENTO",SSI=round(ssi$coefficients[2],1),RRI=round(RRI[1],2))
+edad.ssi
+
+```

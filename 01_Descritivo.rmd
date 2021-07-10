@@ -14,6 +14,7 @@ output:
 ---
 
 # Bases
+
 ```{r, echo=F, warning=F, message=F, error=F}
 library(tidyverse)
 library(gtsummary)
@@ -37,6 +38,7 @@ region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 ```
 
 # PRE UNION
+
 ```{r, warning=F, message=F, error=F}
 
 # BD principales
@@ -166,15 +168,18 @@ prep.data <-function(MOV2020){ MOV2020 %>%
     
          
          CRED = as.factor(ifelse(S466==0 | S466 == 8,"No","Si")),
+        
+        
          
-         
+         S466B = ifelse(is.na(S466B),99,S466B),
          CREDLUGAR = factor(S466B, levels = c(21,22,23,24,
                                               25,26,27,31,
-                                              32,41,42,96), labels = c("H.MINSA/FFAA","H.ESSALUD","H.MINSA/FFAA",
+                                              32,41,42,96,99), labels = c("H.MINSA/FFAA","H.ESSALUD","H.MINSA/FFAA",
                                                                  "CS/POSTA MINSA","CS/POSTA MINSA","CS.ESSALUD",
                                                                  "OTRO/PRIVADO","OTRO/PRIVADO","OTRO/PRIVADO","OTRO/PRIVADO",
-                                                                 "OTRO/PRIVADO","OTRO/PRIVADO")),
+                                                                 "OTRO/PRIVADO","OTRO/PRIVADO","NoCRED")),
          
+        
          
          
          TIPORESIDENCIA = ifelse(V102==1,"URBANO","RURAL"),
@@ -191,7 +196,7 @@ prep.data <-function(MOV2020){ MOV2020 %>%
          
          
          
-         EDU_MADRE = factor(V106, levels = c(0,1,2,3), labels = c("Sin educ","primaria","secundaria","superior")),
+         EDU_MADRE = factor(V106, levels = c(0,1,2,3), labels = c("sin educ","primaria","secundaria","superior")),
          
          
          ETNIA_MADRE = factor(V131, levels = c(1:12), labels = c("quechua","aimara","ashaninka","awajun",
@@ -205,9 +210,11 @@ prep.data <-function(MOV2020){ MOV2020 %>%
          SEGURO = factor(V481, levels = c(0,1), labels = c("No","Si")),
          
          EDAD_MADRE = ifelse(V012<18,"< 18 a",
-                             ifelse(V012>=18&V012<35,"18-35 a",">35 a")),
+                             ifelse(V012>=18&V012<30,"18-30 a",
+                                    ifelse(V012>=30&V012<40,"30 a 40",
+                                           ifelse(V012>=40,"40 a mas",NA)))),
          
-         INDICERIQUEZA = V190,
+         INDICERIQUEZA = factor(V190, levels = c(1:5), labels = c("1ro","2do","3ro","4to","5to")),
     
     
         V005 = V005/1000000) %>% 
@@ -231,6 +238,9 @@ prep.data <-function(MOV2020){ MOV2020 %>%
           NEUMO_COMPLETA = as.factor(ifelse(S45NM1 !=0 & S45NM2 != 0 & S45NM3 != 0,1,0)),
           INFLU_COMPLETA = as.factor(ifelse(S45IF1 !=0 & S45IF2 != 0,1,0)),
           ROTA_COMPLETA = as.factor(ifelse(S45RT1 !=0 & S45RT2 != 0,1,0)),
+          
+          
+          EDAD_CAT_V = ifelse(QI478 <12,"menor 1a","> 1 a"),
           
           
           # Inicio de esquemas 
@@ -260,13 +270,12 @@ prep.data <-function(MOV2020){ MOV2020 %>%
 MOV2020_2<- prep.data(MOV2020)
 
 write.csv(MOV2020_2,"./BD.INTERMEDIAS/MOV2020_2.csv",row.names = F)
+
 ```
 
-# RESUMEN 
+# RESUMEN
 
-V001 : CONGLOMERADO
-V022 : ESTRATO
-V005 : FACTOR DE PONDERACION MUJER
+V001 : CONGLOMERADO V022 : ESTRATO V005 : FACTOR DE PONDERACION MUJER
 
 ```{r,warning=F, message=F, error=F}
 
@@ -338,8 +347,7 @@ ggplot(data = st_as_sf(df2) %>% mutate(vacuna = vacuna*100,
 
 ```
 
-
-# PROPORCION POR CRED 
+# PROPORCION POR CRED
 
 ```{r, echo=F, warning=F, message=F, error=F}
 PTV<-svyby(~MOV_PTV_e1_2, by=~CRED, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
@@ -445,7 +453,7 @@ ggplot(data = df2, aes(x = vacunatipo, y = vacuna, fill = CREDLUGAR)) +
 
 ```
 
-# TIPO DE RESIDENCIA 
+# TIPO DE RESIDENCIA
 
 ```{r, echo=F, warning=F, message=F, error=F}
 PTV<-svyby(~MOV_PTV_e1_2, by=~TIPORESIDENCIA + DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
@@ -497,7 +505,6 @@ ggplot(data = st_as_sf(df2) %>% mutate(vacuna = vacuna*100,
 ```
 
 # EDUCACION DE LA MADRE
-
 
 ```{r, echo=F, warning=F, message=F, error=F}
 PTV<-svyby(~MOV_PTV_e1_2, by=~EDU_MADRE, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
@@ -748,8 +755,8 @@ ggplot(data = st_as_sf(df2) %>% mutate(vacuna = vacuna*100,
 
 ```
 
-
 # EDAD MADRE
+
 ```{r, echo=F, warning=F, message=F, error=F, fig.width= 10, fig.height= 10}
 PTV<-svyby(~MOV_PTV_e1_2, by=~EDAD_MADRE + DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
   
@@ -796,7 +803,275 @@ ggplot(data = st_as_sf(df2) %>% mutate(vacuna = vacuna*100,
   theme_bw()
 ```
 
+# REGION / DOSIS 1 Y 2 (TARJETA)
+
+```{r}
+PTV<-svyby(~S45PV1_1, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45PV1_1,vacunatipo = "PTV_1") %>% 
+  
+  select(-`se.as.numeric(S45PV1_1)`,-S45PV1_1)
+
+PTV2<-svyby(~S45PV2_1, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45PV2_1,vacunatipo = "PTV_2") %>% 
+  
+  select(-`se.as.numeric(S45PV2_1)`,-S45PV2_1)
+
+PTV3<-svyby(~S45PV3_1, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45PV3_1,vacunatipo = "PTV_3") %>% 
+  
+  select(-`se.as.numeric(S45PV3_1)`,-S45PV3_1)
 
 
 
 
+
+
+NEUMO1<-svyby(~S45NM1_1, by=~DEPARTAMEN+EDAD_CAT_V, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45NM1_1,vacunatipo = "NEUMO_1") %>% 
+  
+  select(-`se.as.numeric(S45NM1_1)`,-S45NM1_1)
+
+NEUMO2<-svyby(~S45NM1_1, by=~DEPARTAMEN+EDAD_CAT_V, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45NM1_1,vacunatipo = "NEUMO_2") %>% 
+  
+  select(-`se.as.numeric(S45NM1_1)`,-S45NM1_1)
+
+NEUMO3<-svyby(~S45NM1_1, by=~DEPARTAMEN+EDAD_CAT_V, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45NM1_1,vacunatipo = "NEUMO_3") %>% 
+  
+  select(-`se.as.numeric(S45NM1_1)`,-S45NM1_1)
+
+
+
+
+
+
+INFLU1<-svyby(~S45IF1_1, by=~DEPARTAMEN+EDAD_CAT_V, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45IF1_1,vacunatipo = "INFLU_1") %>% 
+  
+  select(-`se.as.numeric(S45IF1_1)`,-S45IF1_1)
+
+INFLU2<-svyby(~S45IF2_1, by=~DEPARTAMEN+EDAD_CAT_V, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45IF2_1,vacunatipo = "INFLU_2") %>% 
+  
+  select(-`se.as.numeric(S45IF2_1)`,-S45IF2_1)
+
+
+
+
+ROTA1<-svyby(~S45RT1_1, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45RT1_1,vacunatipo = "ROTA_1") %>% 
+  
+  select(-`se.as.numeric(S45RT1_1)`,-S45RT1_1)
+
+ROTA2<-svyby(~S45RT2_1, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45RT2_1,vacunatipo = "ROTA_2") %>% 
+  
+  select(-`se.as.numeric(S45RT2_1)`,-S45RT2_1)
+
+```
+
+## Graficos con tarjeta
+
+```{r}
+ggplot() + 
+  
+  geom_col(data = PTV, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  geom_col(data = PTV2, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  geom_col(data = PTV3, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  coord_flip() +
+  
+   theme_minimal()
+
+
+ggplot() + 
+  
+  geom_col(data = NEUMO1, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  geom_col(data = NEUMO2, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  geom_col(data = NEUMO3, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  coord_flip() +
+  
+  facet_wrap(~EDAD_CAT_V) +
+  
+   theme_minimal()
+
+
+ggplot() + 
+  
+  geom_col(data = INFLU1, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  geom_col(data = INFLU2, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  coord_flip() +
+  
+  facet_wrap(~EDAD_CAT_V) +
+  
+   theme_minimal()
+
+
+
+ggplot() + 
+  
+  geom_col(data = ROTA1, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  geom_col(data = ROTA2, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+
+  
+  coord_flip() +
+  
+  theme_minimal()
+  
+  
+```
+
+# REGION / DOSIS 1 Y 2 (MADRE)
+
+```{r}
+PTV<-svyby(~S45PV1_2, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45PV1_2,vacunatipo = "PTV_1") %>% 
+  
+  select(-`se.as.numeric(S45PV1_2)`,-S45PV1_2)
+
+PTV2<-svyby(~S45PV2_2, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45PV2_2,vacunatipo = "PTV_2") %>% 
+  
+  select(-`se.as.numeric(S45PV2_2)`,-S45PV2_2)
+
+PTV3<-svyby(~S45PV3_2, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45PV3_2,vacunatipo = "PTV_3") %>% 
+  
+  select(-`se.as.numeric(S45PV3_2)`,-S45PV3_2)
+
+
+
+
+
+
+NEUMO1<-svyby(~S45NM1_2, by=~DEPARTAMEN+EDAD_CAT_V, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45NM1_2,vacunatipo = "NEUMO_1") %>% 
+  
+  select(-`se.as.numeric(S45NM1_2)`,-S45NM1_2)
+
+NEUMO2<-svyby(~S45NM2_2, by=~DEPARTAMEN+EDAD_CAT_V, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45NM2_2,vacunatipo = "NEUMO_2") %>% 
+  
+  select(-`se.as.numeric(S45NM2_2)`,-S45NM2_2)
+
+NEUMO3<-svyby(~S45NM3_2, by=~DEPARTAMEN+EDAD_CAT_V, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45NM3_2,vacunatipo = "NEUMO_3") %>% 
+  
+  select(-`se.as.numeric(S45NM3_2)`,-S45NM3_2)
+
+
+
+
+
+
+INFLU1<-svyby(~S45IF1_2, by=~DEPARTAMEN+EDAD_CAT_V, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45IF1_2,vacunatipo = "INFLU_1") %>% 
+  
+  select(-`se.as.numeric(S45IF1_2)`,-S45IF1_2)
+
+INFLU2<-svyby(~S45IF2_2, by=~DEPARTAMEN+EDAD_CAT_V, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45IF2_2,vacunatipo = "INFLU_2") %>% 
+  
+  select(-`se.as.numeric(S45IF2_2)`,-S45IF2_2)
+
+
+
+
+ROTA1<-svyby(~S45RT1_2, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45RT1_2,vacunatipo = "ROTA_1") %>% 
+  
+  select(-`se.as.numeric(S45RT1_2)`,-S45RT1_2)
+
+ROTA2<-svyby(~S45RT2_2, by=~DEPARTAMEN, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+  
+  mutate(vacuna = S45RT2_2,vacunatipo = "ROTA_2") %>% 
+  
+  select(-`se.as.numeric(S45RT2_2)`,-S45RT2_2)
+```
+
+## Graficos (MADRE)
+
+```{r}
+ggplot() + 
+  
+  geom_col(data = PTV, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  geom_col(data = PTV2, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  geom_col(data = PTV3, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  coord_flip() +
+  
+   theme_minimal()
+
+
+ggplot() + 
+  
+  geom_col(data = NEUMO1, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  geom_col(data = NEUMO2, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  geom_col(data = NEUMO3, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  coord_flip() +
+  
+  facet_wrap(~EDAD_CAT_V) +
+  
+   theme_minimal()
+
+
+ggplot() + 
+  
+  geom_col(data = INFLU1, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  geom_col(data = INFLU2, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  coord_flip() +
+  
+  facet_wrap(~EDAD_CAT_V) +
+  
+   theme_minimal()
+
+
+
+ggplot() + 
+  
+  geom_col(data = ROTA1, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+  
+  geom_col(data = ROTA2, aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo), alpha = 0.5) +
+
+  
+  coord_flip() +
+  
+  theme_minimal()
+  
+  
+```
