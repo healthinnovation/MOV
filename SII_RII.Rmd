@@ -3,15 +3,19 @@ title: "Untitled"
 output: html_document
 ---
 
-```{r}
+```{r, warning=F, message=F,comment=F}
 
 library(tidyverse)
 library(survey)
+library(jtools)
+library(sandwich)
+library(sf)
 ```
 
 ```{r}
 # Base de trabajo
 MOV2020_2 <- read.csv("./BD.INTERMEDIAS/MOV2020_2.csv")
+region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 
 #BD en survey
 df <- svydesign(id =~ V001, strata =~ V022, probs=~V005, data=MOV2020_2) 
@@ -20,9 +24,9 @@ df <- svydesign(id =~ V001, strata =~ V022, probs=~V005, data=MOV2020_2)
 options(survey.lonely.psu="remove")
 ```
 
-# DEPARTAMENTOS
+# EVENTO
 
-## Preparando los datos
+## DEPARTAMENTOS
 
 ```{r}
 # Total de casos del evento 
@@ -63,10 +67,6 @@ total.dep2<-
 
 ```
 
-## GRAFICO, SSI y RII
-
-### GRAFICO Y SSI
-
 ```{r}
 
 # Grafico para verificar linealidad
@@ -83,8 +83,6 @@ jtools::summ(ssi, confint = T, robust = T)
 
 ```
 
-### RII
-
 ```{r}
 bd <- data.frame(hr2 = c(0,1))
 
@@ -95,7 +93,7 @@ depa.ssi<-c(Variable="DEPARTAMENTO",SSI=round(ssi$coefficients[2],1),RRI=round(R
 depa.ssi
 ```
 
-# CRED LUGAR
+## CRED LUGAR
 
 ```{r}
 total.casos<-
@@ -157,7 +155,7 @@ credtipo.ssi
 
 ```
 
-# EDUCACION DE LA MADRE
+## EDUCACION DE LA MADRE
 
 ```{r}
 total.casos<-
@@ -219,7 +217,7 @@ edumadre.ssi
 
 ```
 
-# INDICE RIQUEZA
+## INDICE RIQUEZA
 
 ```{r}
 total.casos<-
@@ -278,9 +276,10 @@ RRI<-predict(ssi,newdata = bd %>% filter(hr2 == 1))/predict(ssi,newdata = bd %>%
 riqueza.ssi<-c(Variable="DEPARTAMENTO",SSI=round(ssi$coefficients[2],1),RRI=round(RRI[1],2))
 riqueza.ssi
 
+
 ```
 
-# EDAD MADRE
+## EDAD MADRE
 
 ```{r}
 total.casos<-
@@ -340,3 +339,99 @@ edad.ssi<-c(Variable="DEPARTAMENTO",SSI=round(ssi$coefficients[2],1),RRI=round(R
 edad.ssi
 
 ```
+
+# EVENTO POR REGION
+
+```{r}
+total.casos<-
+  svyby(~MOV_PTV_e1_2, by=~INDICERIQUEZA + DEPARTAMEN, design =df, FUN=svytotal) %>% 
+  
+  data.frame() %>%
+  
+  mutate(casos.mov.ptv= MOV_PTV_e1_2) %>% 
+    
+  select(-MOV_PTV_e1_2)
+
+
+
+# Union de bases y calculo del HR
+total.dep2<-
+  total.casos %>% 
+  
+  group_by(INDICERIQUEZA) %>% 
+  
+  arrange(casos.mov.ptv, .by_group = T) %>% 
+  
+  select(INDICERIQUEZA,DEPARTAMEN,casos.mov.ptv) %>% 
+  
+  mutate(pop= casos.mov.ptv/sum(casos.mov.ptv),
+         
+         popr = cumsum(pop)/sum(pop),
+         pop.popr = popr - pop,
+         hr2 = round((pop.popr + popr)/2,3)) %>% 
+  
+  ungroup() %>% 
+         
+  
+  select(-pop,-popr,-pop.popr) %>% filter(DEPARTAMEN != "MADRE DE DIOS")
+
+
+
+
+```
+
+
+```{r}
+
+# Grafico lm
+ggplot(data = total.dep2 , aes(x =hr2 , y = casos.mov.ptv)) +
+  
+  geom_point() +
+  
+  geom_smooth(method = "lm") + 
+  
+  facet_wrap(~INDICERIQUEZA)
+
+
+
+# map
+
+gg<-total.dep2 %>% 
+  
+  group_by(DEPARTAMEN) %>% 
+  
+  nest() %>% 
+  
+  mutate(
+    
+    modelo = map(.x = data, .f = ~lm(data = .x, formula = casos.mov.ptv~hr2)),
+    
+    modelo2 = map(.x = modelo, .f = ~tidy(lmtest::coeftest(.x, vcov = vcovHC, type = "HC2"), conf.int = T))
+  
+    ) %>% 
+   
+   unnest(cols = c(modelo2)) %>% 
+   
+   group_by(DEPARTAMEN) %>% 
+   
+   slice(2) %>% 
+   
+   select(DEPARTAMEN,term,estimate) %>% data.frame() %>% 
+   
+   left_join(region_shape, by = "DEPARTAMEN") %>% 
+   
+   st_as_sf() %>% 
+   
+   ggplot() +
+   
+   geom_sf(aes(fill = estimate)) + 
+   
+   theme_minimal() + 
+   
+   labs(fill = "SSI\nInd.Riqueza") + 
+   
+   scale_fill_viridis_c()
+  
+ggsave("gg.png",gg,height = 8,width = 8)
+```
+
