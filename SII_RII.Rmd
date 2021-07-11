@@ -29,193 +29,321 @@ options(survey.lonely.psu="remove")
 ## DEPARTAMENTOS
 
 ```{r}
-# Total de casos del evento 
-
-    
-total.casos<-
-  svyby(~MOV_PTV_e1_2, by=~DEPARTAMEN, design =df, FUN=svytotal) %>% 
+PTV<-svyby(~MOV_PTV_e1_2, by=~DEPARTAMEN, design =df, FUN=svytotal) %>% 
   
-  data.frame() %>%
+  mutate(vacuna = MOV_PTV_e1_2,vacunatipo = "PTV") %>% 
   
-  mutate(casos.mov.ptv= MOV_PTV_e1_2) %>% 
-    
   select(-MOV_PTV_e1_2)
 
-# Union de bases y calculo del HR
-total.dep2<-
-  total.casos %>% 
+
+NEUMO<-svyby(~MOV_NEUMO_e1_2, by=~DEPARTAMEN, design =df, FUN=svytotal) %>% 
   
-  #full_join(total.dep, by = "DEPARTAMEN") %>% 
+  mutate(vacuna = MOV_NEUMO_e1_2,vacunatipo = "NEUMO") %>% 
   
-  arrange(casos.mov.ptv) %>% 
+  select(-MOV_NEUMO_e1_2)
+
+
+INFLU<-svyby(~MOV_INFLU_e1_2, by=~DEPARTAMEN, design =df, FUN=svytotal) %>% 
   
-  #select(DEPARTAMEN,casos.mov.ptv) %>% 
+  mutate(vacuna = MOV_INFLU_e1_2,vacunatipo = "INFLU") %>% 
   
-  mutate(pop= casos.mov.ptv/sum(casos.mov.ptv),
+  select(-MOV_INFLU_e1_2) 
+
+
+ROTA<-svyby(~MOV_ROTA_e1, by=~DEPARTAMEN, design =df, FUN=svytotal) %>% 
+  
+  mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA") %>% 
+  
+  select(-MOV_ROTA_e1)
+
+
+
+df2 <- bind_rows(PTV,NEUMO,INFLU,ROTA) 
+
+
+
+```
+
+### Generando HR
+
+```{r}
+df2<-
+  df2 %>% 
+  group_by(vacunatipo) %>% 
+  
+  arrange(vacuna,.by_group = T) %>% 
+
+  mutate(pop= vacuna/sum(vacuna),
          
          popr = cumsum(pop)/sum(pop),
          pop.popr = popr - pop,
          hr2 = round((pop.popr + popr)/2,3)
          ) %>% 
   
-  select(-pop,-popr,-pop.popr) %>% 
-         filter(DEPARTAMEN != "MADRE DE DIOS") 
-
-  
-  
-
+  select(-pop,-popr,-pop.popr)
 
 ```
 
-```{r}
+### Verificar
 
-# Grafico para verificar linealidad
-ggplot(data = total.dep2 , aes(x =hr2 , y = casos.mov.ptv)) +
+```{r}
+ggplot(data = df2 , aes(x =hr2 , y = vacuna)) +
   
   geom_point() +
   
-  geom_smooth(method = "lm")
-
-
-ssi <- lm(casos.mov.ptv ~ hr2, data = total.dep2)
-
-jtools::summ(ssi, confint = T, robust = T)
-
+  geom_smooth(method = "lm") +
+  
+  facet_wrap(~vacunatipo)
 ```
 
+### SII y RII por vacuna
+
 ```{r}
+
 bd <- data.frame(hr2 = c(0,1))
 
-RRI<-predict(ssi,newdata = bd %>% filter(hr2 == 1))/predict(ssi,newdata = bd %>% filter(hr2 == 0))
+df2<-
+  df2 %>% 
+  
+  #filter(DEPARTAMEN != "MADRE DE DIOS") %>% 
+  
+  group_by(vacunatipo) %>% 
+  
+  nest() %>% 
+  
+  mutate(
+    
+    modelo = map(.x = data, .f = ~lm(formula = vacuna~hr2, data = .x)),
+    
+    modelo2 = map(.x = modelo, .f = ~tidy(lmtest::coeftest(.x, vcov = vcovHC, type = "HC2"), conf.int = T)),
 
+    ) %>% 
+  
+  ungroup() %>% 
+  
+  unnest(cols = c(modelo2)) %>% 
+  
+  group_by(vacunatipo) %>% 
+  
+  slice(2) %>%
+  
+  mutate(rii = map_dbl(.x = modelo, 
+                       .f =~predict(.x,newdata = bd %>% filter(hr2 == 1))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
+         
+         ssi = estimate) %>% 
+  
+  select(vacunatipo,term,ssi,rii)
 
-depa.ssi<-c(Variable="DEPARTAMENTO",SSI=round(ssi$coefficients[2],1),RRI=round(RRI[1],2))
-depa.ssi
+df2
+
 ```
 
 ## CRED LUGAR
 
 ```{r}
-total.casos<-
-  svyby(~MOV_PTV_e1_2, by=~CREDLUGAR, design =df, FUN=svytotal) %>% 
+PTV<-svyby(~MOV_PTV_e1_2, by=~CREDLUGAR, design =df, FUN=svytotal) %>% 
   
-  data.frame() %>%
+  mutate(vacuna = MOV_PTV_e1_2,vacunatipo = "PTV") %>% 
   
-  mutate(casos.mov.ptv= MOV_PTV_e1_2) %>% 
-    
   select(-MOV_PTV_e1_2)
 
 
+NEUMO<-svyby(~MOV_NEUMO_e1_2, by=~CREDLUGAR, design =df, FUN=svytotal) %>% 
+  
+  mutate(vacuna = MOV_NEUMO_e1_2,vacunatipo = "NEUMO") %>% 
+  
+  select(-MOV_NEUMO_e1_2)
 
-# Union de bases y calculo del HR
-total.dep2<-
-  total.casos %>% 
+
+INFLU<-svyby(~MOV_INFLU_e1_2, by=~CREDLUGAR, design =df, FUN=svytotal) %>% 
   
-  arrange(casos.mov.ptv) %>% 
+  mutate(vacuna = MOV_INFLU_e1_2,vacunatipo = "INFLU") %>% 
   
-  select(CREDLUGAR,casos.mov.ptv) %>% 
+  select(-MOV_INFLU_e1_2) 
+
+
+ROTA<-svyby(~MOV_ROTA_e1, by=~CREDLUGAR, design =df, FUN=svytotal) %>% 
   
-  mutate(pop= casos.mov.ptv/sum(casos.mov.ptv),
+  mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA") %>% 
+  
+  select(-MOV_ROTA_e1)
+
+
+
+df2 <- bind_rows(PTV,NEUMO,INFLU,ROTA)
+
+```
+
+### Generando HR
+```{r}
+df2<-
+  df2 %>% 
+  group_by(vacunatipo) %>% 
+  
+  arrange(vacuna,.by_group = T) %>% 
+
+  mutate(pop= vacuna/sum(vacuna),
          
          popr = cumsum(pop)/sum(pop),
          pop.popr = popr - pop,
-         hr2 = round((pop.popr + popr)/2,3)) %>% 
-         
+         hr2 = round((pop.popr + popr)/2,3)
+         ) %>% 
   
-  select(-pop,-popr,-pop.popr) %>% filter(CREDLUGAR != "NoCRED")
-
-
-
-
+  select(-pop,-popr,-pop.popr)
 ```
 
+### Verificar
 ```{r}
-# Grafico para verificar linealidad
-ggplot(data = total.dep2, aes(x =hr2 , y = casos.mov.ptv)) +
+ggplot(data = df2 , aes(x =hr2 , y = vacuna)) +
   
   geom_point() +
   
-  geom_smooth(method = "lm")
-
-
-ssi <- lm(casos.mov.ptv ~ hr2, data = total.dep2)
-
-jtools::summ(ssi, confint = T, robust = T)
+  geom_smooth(method = "lm") +
+  
+  facet_wrap(~vacunatipo)
 ```
 
+### SII y RII por vacuna
 ```{r}
 bd <- data.frame(hr2 = c(0,1))
 
-RRI<-predict(ssi,newdata = bd %>% filter(hr2 == 1))/predict(ssi,newdata = bd %>% filter(hr2 == 0))
+df2<-
+  df2 %>% 
+  
+  filter(CREDLUGAR != "NoCRED") %>% 
+  
+  group_by(vacunatipo) %>% 
+  
+  nest() %>% 
+  
+  mutate(
+    
+    modelo = map(.x = data, .f = ~lm(formula = vacuna~hr2, data = .x)),
+    
+    modelo2 = map(.x = modelo, .f = ~tidy(lmtest::coeftest(.x, vcov = vcovHC, type = "HC2"), conf.int = T)),
 
-
-credtipo.ssi<-c(Variable="DEPARTAMENTO",SSI=round(ssi$coefficients[2],1),RRI=round(RRI[1],2))
-credtipo.ssi
-
+    ) %>% 
+  
+  ungroup() %>% 
+  
+  unnest(cols = c(modelo2)) %>% 
+  
+  group_by(vacunatipo) %>% 
+  
+  slice(2) %>%
+  
+  mutate(rii = map_dbl(.x = modelo, 
+                       .f =~predict(.x,newdata = bd %>% filter(hr2 == 1))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
+         
+         ssi = estimate) %>% 
+  
+  select(vacunatipo,term,ssi,rii)
 
 ```
 
 ## EDUCACION DE LA MADRE
 
+
 ```{r}
-total.casos<-
-  svyby(~MOV_PTV_e1_2, by=~EDU_MADRE, design =df, FUN=svytotal) %>% 
+PTV<-svyby(~MOV_PTV_e1_2, by=~EDU_MADRE, design =df, FUN=svytotal) %>% 
   
-  data.frame() %>%
+  mutate(vacuna = MOV_PTV_e1_2,vacunatipo = "PTV") %>% 
   
-  mutate(casos.mov.ptv= MOV_PTV_e1_2) %>% 
-    
   select(-MOV_PTV_e1_2)
 
 
+NEUMO<-svyby(~MOV_NEUMO_e1_2, by=~EDU_MADRE, design =df, FUN=svytotal) %>% 
+  
+  mutate(vacuna = MOV_NEUMO_e1_2,vacunatipo = "NEUMO") %>% 
+  
+  select(-MOV_NEUMO_e1_2)
 
-# Union de bases y calculo del HR
-total.dep2<-
-  total.casos %>% 
+
+INFLU<-svyby(~MOV_INFLU_e1_2, by=~EDU_MADRE, design =df, FUN=svytotal) %>% 
   
-  arrange(casos.mov.ptv) %>% 
+  mutate(vacuna = MOV_INFLU_e1_2,vacunatipo = "INFLU") %>% 
   
-  select(EDU_MADRE,casos.mov.ptv) %>% 
+  select(-MOV_INFLU_e1_2) 
+
+
+ROTA<-svyby(~MOV_ROTA_e1, by=~EDU_MADRE, design =df, FUN=svytotal) %>% 
   
-  mutate(pop= casos.mov.ptv/sum(casos.mov.ptv),
+  mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA") %>% 
+  
+  select(-MOV_ROTA_e1)
+
+
+
+df2 <- bind_rows(PTV,NEUMO,INFLU,ROTA)
+
+```
+
+### Generando HR
+```{r}
+df2<-
+  df2 %>% 
+  group_by(vacunatipo) %>% 
+  
+  arrange(vacuna,.by_group = T) %>% 
+
+  mutate(pop= vacuna/sum(vacuna),
          
          popr = cumsum(pop)/sum(pop),
          pop.popr = popr - pop,
-         hr2 = round((pop.popr + popr)/2,3)) %>% 
-         
+         hr2 = round((pop.popr + popr)/2,3)
+         ) %>% 
   
   select(-pop,-popr,-pop.popr)
-
-
-
-
 ```
 
+### Verificar
 ```{r}
-# Grafico para verificar linealidad
-ggplot(data = total.dep2, aes(x = casos.mov.ptv, y = hr2)) +
+ggplot(data = df2 , aes(x =hr2 , y = vacuna)) +
   
   geom_point() +
   
-  geom_smooth(method = "lm")
-
-
-ssi <- lm(casos.mov.ptv ~ hr2, data = total.dep2)
-
-jtools::summ(ssi, confint = T, robust = T)
+  geom_smooth(method = "lm") +
+  
+  facet_wrap(~vacunatipo)
 ```
 
+### SII y RII por vacuna
 ```{r}
 bd <- data.frame(hr2 = c(0,1))
 
-RRI<-predict(ssi,newdata = bd %>% filter(hr2 == 1))/predict(ssi,newdata = bd %>% filter(hr2 == 0))
+df2<-
+  df2 %>% 
+  
+  group_by(vacunatipo) %>% 
+  
+  nest() %>% 
+  
+  mutate(
+    
+    modelo = map(.x = data, .f = ~lm(formula = vacuna~hr2, data = .x)),
+    
+    modelo2 = map(.x = modelo, .f = ~tidy(lmtest::coeftest(.x, vcov = vcovHC, type = "HC2"), conf.int = T)),
 
+    ) %>% 
+  
+  ungroup() %>% 
+  
+  unnest(cols = c(modelo2)) %>% 
+  
+  group_by(vacunatipo) %>% 
+  
+  slice(2) %>%
+  
+  mutate(rii = map_dbl(.x = modelo, 
+                       .f =~predict(.x,newdata = bd %>% filter(hr2 == 1))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
+         
+         ssi = estimate) %>% 
+  
+  select(vacunatipo,term,ssi,rii)
 
-edumadre.ssi<-c(Variable="DEPARTAMENTO",SSI=round(ssi$coefficients[2],1),RRI=round(RRI[1],2))
-edumadre.ssi
-
-
+df2
 ```
+
 
 ## INDICE RIQUEZA
 
@@ -373,13 +501,14 @@ total.dep2<-
   ungroup() %>% 
          
   
-  select(-pop,-popr,-pop.popr) %>% filter(DEPARTAMEN != "MADRE DE DIOS")
+  select(-pop,-popr,-pop.popr) 
+  
+  #filter(DEPARTAMEN != "MADRE DE DIOS")
 
 
 
 
 ```
-
 
 ```{r}
 
@@ -390,7 +519,7 @@ ggplot(data = total.dep2 , aes(x =hr2 , y = casos.mov.ptv)) +
   
   geom_smooth(method = "lm") + 
   
-  facet_wrap(~INDICERIQUEZA)
+  facet_wrap(~DEPARTAMEN)
 
 
 
@@ -428,10 +557,11 @@ gg<-total.dep2 %>%
    
    theme_minimal() + 
    
-   labs(fill = "SSI\nInd.Riqueza") + 
+   labs(fill = "SSI\nIR") + 
    
-   scale_fill_viridis_c()
-  
-ggsave("gg.png",gg,height = 8,width = 8)
-```
+   scale_fill_viridis_c() 
 
+gg
+  
+#ggsave("gg.png",gg,height = 8,width = 8)
+```

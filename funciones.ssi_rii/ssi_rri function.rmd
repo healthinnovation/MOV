@@ -1,0 +1,60 @@
+---
+title: "ssi_rri function"
+output: html_document
+---
+
+```{r}
+ssi_rri<-function(data) {
+   
+   
+   bd <- data.frame(hr2 = c(0,1))
+ 
+ data<-
+   data %>% 
+   group_by(vacunatipo) %>% 
+   
+   arrange(vacuna,.by_group = T) %>% 
+ 
+   mutate(pop= vacuna/sum(vacuna),
+          
+          popr = cumsum(pop)/sum(pop),
+          pop.popr = popr - pop,
+          hr2 = round((pop.popr + popr)/2,3)
+          ) %>% 
+   
+   select(-pop,-popr,-pop.popr) %>% 
+ 
+   
+   group_by(vacunatipo) %>% 
+   
+   nest() %>% 
+   
+   mutate(
+     
+     modelo = map(.x = data, .f = ~lm(formula = vacuna~hr2, data = .x)),
+     
+     modelo2 = map(.x = modelo, .f = ~tidy(lmtest::coeftest(.x, vcov = vcovHC, type = "HC2"), conf.int = T)),
+ 
+     ) %>% 
+   
+   ungroup() %>% 
+   
+   unnest(cols = c(modelo2)) %>% 
+   
+   group_by(vacunatipo) %>% 
+   
+   slice(2) %>%
+   
+   mutate(rii = map_dbl(.x = modelo, 
+                        .f =~predict(.x,newdata = bd %>% filter(hr2 == 1))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
+          
+          ssi = estimate) %>% 
+   
+   select(vacunatipo,term,ssi,rii)
+ 
+ data
+ 
+}
+
+```
+
