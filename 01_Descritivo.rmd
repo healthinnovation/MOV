@@ -835,17 +835,17 @@ NEUMO1<-svyby(~S45NM1_1, by=~DEPARTAMEN+EDAD_CAT_V, design =df, FUN=svyciprop, v
   
   select(-`se.as.numeric(S45NM1_1)`,-S45NM1_1)
 
-NEUMO2<-svyby(~S45NM1_1, by=~DEPARTAMEN+EDAD_CAT_V, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+NEUMO2<-svyby(~S45NM2_1, by=~DEPARTAMEN+EDAD_CAT_V, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
   
-  mutate(vacuna = S45NM1_1,vacunatipo = "NEUMO_2") %>% 
+  mutate(vacuna = S45NM2_1,vacunatipo = "NEUMO_2") %>% 
   
-  select(-`se.as.numeric(S45NM1_1)`,-S45NM1_1)
+  select(-`se.as.numeric(S45NM2_1)`,-S45NM2_1)
 
-NEUMO3<-svyby(~S45NM1_1, by=~DEPARTAMEN+EDAD_CAT_V, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
+NEUMO3<-svyby(~S45NM3_1, by=~DEPARTAMEN+EDAD_CAT_V, design =df, FUN=svyciprop, vartype=c('se','ci')) %>% 
   
-  mutate(vacuna = S45NM1_1,vacunatipo = "NEUMO_3") %>% 
+  mutate(vacuna = S45NM3_1,vacunatipo = "NEUMO_3") %>% 
   
-  select(-`se.as.numeric(S45NM1_1)`,-S45NM1_1)
+  select(-`se.as.numeric(S45NM3_1)`,-S45NM3_1)
 
 
 
@@ -937,7 +937,17 @@ ggplot() +
   
   theme_minimal()
   
+
+INFLU1 %>% 
   
+  bind_rows(INFLU2) %>% 
+ 
+  
+  ggplot(aes(x = DEPARTAMEN, y = vacuna, fill = vacunatipo)) + 
+  
+  geom_col(position = "fill") +
+  
+  coord_flip() + facet_wrap(~EDAD_CAT_V)
 ```
 
 # REGION / DOSIS 1 Y 2 (MADRE)

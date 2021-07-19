@@ -3,8 +3,37 @@ title: "ssi_rri function"
 output: html_document
 ---
 
+#1. SII_RII
+
 ```{r}
-ssi_rri<-function(data) {
+h_prop<-
+   function(data) {
+   
+ data<-
+   data %>% 
+   group_by(vacunatipo) %>% 
+   
+    # ordenar de - a +
+   arrange(vacuna,.by_group = T) %>% 
+   
+     # Calculo de hr
+   mutate(pop= vacuna/sum(vacuna),
+          
+          popr = cumsum(pop)/sum(pop),
+          pop.popr = popr - pop,
+          hr2 = round((pop.popr + popr)/2,3)
+          ) %>% 
+   
+   select(-pop,-popr,-pop.popr)
+ 
+ 
+ data 
+}
+```
+
+
+```{r}
+sii_rii<-function(data) {
    
    
    bd <- data.frame(hr2 = c(0,1))
@@ -13,8 +42,10 @@ ssi_rri<-function(data) {
    data %>% 
    group_by(vacunatipo) %>% 
    
+    # ordenar de - a +
    arrange(vacuna,.by_group = T) %>% 
- 
+   
+     # Calculo de hr
    mutate(pop= vacuna/sum(vacuna),
           
           popr = cumsum(pop)/sum(pop),
@@ -31,9 +62,13 @@ ssi_rri<-function(data) {
    
    mutate(
      
+      # lm para ssi 
      modelo = map(.x = data, .f = ~lm(formula = vacuna~hr2, data = .x)),
      
-     modelo2 = map(.x = modelo, .f = ~tidy(lmtest::coeftest(.x, vcov = vcovHC, type = "HC2"), conf.int = T)),
+      # extraer beta
+     modelo2 = map(.x = modelo, 
+                   .f = ~tidy(lmtest::coeftest(.x, vcov = vcovHC, 
+                                               type = "HC2"), conf.int = T)),
  
      ) %>% 
    
@@ -45,8 +80,10 @@ ssi_rri<-function(data) {
    
    slice(2) %>%
    
-   mutate(rii = map_dbl(.x = modelo, 
-                        .f =~predict(.x,newdata = bd %>% filter(hr2 == 1))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
+    # rri f(1)/f(0)
+   mutate(rii = map_dbl(.x = modelo,
+                .f =~predict(.x,
+                             newdata = bd %>% filter(hr2 == 1))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
           
           ssi = estimate) %>% 
    
@@ -57,4 +94,108 @@ ssi_rri<-function(data) {
 }
 
 ```
+
+
+
+
+#2. SII_RII MAPAS
+
+```{r}
+h_prop.map <-
+   function(data) {
+
+ 
+
+   data<-
+      data %>% 
+   group_by(DEPARTAMEN,vacunatipo) %>% 
+   
+    # ordenar de - a +
+   arrange(vacuna,.by_group = T) %>% 
+   
+     # Calculo de hr
+   mutate(pop= vacuna/sum(vacuna),
+          
+          popr = cumsum(pop)/sum(pop),
+          pop.popr = popr - pop,
+          hr2 = round((pop.popr + popr)/2,3)
+          ) %>% 
+   
+   select(-pop,-popr,-pop.popr) %>% 
+ 
+   
+   group_by(DEPARTAMEN,vacunatipo) 
+   
+   data
+   
+}
+```
+
+
+```{r}
+
+sii_rii_map<-function(data) {
+   
+   
+   bd <- data.frame(hr2 = c(0,1))
+ 
+
+   data<-
+      data %>% 
+   group_by(DEPARTAMEN,vacunatipo) %>% 
+   
+    # ordenar de - a +
+   arrange(vacuna,.by_group = T) %>% 
+   
+     # Calculo de hr
+   mutate(pop= vacuna/sum(vacuna),
+          
+          popr = cumsum(pop)/sum(pop),
+          pop.popr = popr - pop,
+          hr2 = round((pop.popr + popr)/2,3)
+          ) %>% 
+   
+   select(-pop,-popr,-pop.popr) %>% 
+ 
+   
+   group_by(DEPARTAMEN,vacunatipo) %>% 
+   
+   nest() %>% 
+   
+   mutate(
+     
+      # lm para ssi 
+     modelo = map(.x = data, .f = ~lm(formula = vacuna~hr2, data = .x)),
+     
+      # extraer beta
+     modelo2 = map(.x = modelo, 
+                   .f = ~tidy(lmtest::coeftest(.x, vcov = vcovHC, 
+                                               type = "HC2"), conf.int = T)),
+ 
+     ) %>% 
+   
+   #ungroup() %>% 
+   
+   unnest(cols = c(modelo2)) %>% 
+   
+   slice(2) %>%
+   
+    # rri f(1)/f(0)
+   mutate(rii = map_dbl(.x = modelo,
+                        .f =~predict(.x,
+                                     newdata = bd %>% filter(hr2 == 1))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
+          
+          sii = estimate) %>% 
+      
+      mutate(sii = round(sii,2),
+             rii = round(rii,1)) %>% 
+   
+   select(vacunatipo,term,sii,rii)
+ 
+ data
+ 
+}
+```
+
+
 
