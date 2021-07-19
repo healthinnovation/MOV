@@ -1,0 +1,943 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(gtsummary)
+library(survey)
+library(RColorBrewer)
+library(sf)
+library(haven)
+
+```
+
+# 2019
+```{r}
+NINIO <- haven::read_sav("ENDES/2019/DIT.sav")
+NINIO2 <- read_sav("ENDES/2019/REC41.sav")
+MUJER1 <- read_sav("ENDES/2019/REC42.sav" )
+VACUNA1 <- read_sav("ENDES/2019/REC43.sav")
+VACUNA2 <- read_sav("ENDES/2019/REC95.sav")
+HOGAR1 <- read_sav("ENDES/2019/RECH0.sav")
+HOGAR_MADRE <- read_sav("ENDES/2019/RECH1.sav")
+VIVIENDA1 <- read_sav("ENDES/2019/RECH23.sav")
+MUJER2<- read_sav("ENDES/2019/REC0111.sav")
+region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
+#
+# BD principales
+
+## HHID Y HIDX son las variables de union 
+
+VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = IDX95) 
+
+
+# Otras BD
+
+
+## HHID Y HIDX son las variables de union 
+
+NINIO <- NINIO %>% select(CASEID,QI478,BIDX,BORD) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = BIDX) 
+
+
+NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = MIDX) 
+
+
+
+MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V131,V190) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,QH25A,HV122) %>% 
+  
+  mutate(HIDX = HVIDX,
+         HHID = as.integer(HHID))
+
+## BD intermedias
+VACUNA3 <- VACUNA1 %>% full_join(VACUNA2, by =c("HHID","HIDX","CASEID")) # Union tomando CASEID para no perder casos
+
+NINIO_3 <- NINIO %>% left_join(NINIO2, by = c("HHID","HIDX","CASEID"))
+
+
+
+MUJER_3 <- MUJER1 %>% 
+  
+  left_join(MUJER2, by = c("HHID","CASEID")) %>% 
+  mutate(HIDX = as.numeric(str_sub(CASEID,-2,-1))) %>% 
+  
+  left_join(HOGAR_MADRE, by = c("HHID","HIDX"))
+
+
+## BD final
+MOV2019<- VACUNA3 %>% 
+  
+  left_join(NINIO_3, by = c("HHID","HIDX","CASEID")) %>% 
+  
+  left_join(MUJER_3, by = c("HHID","CASEID")) %>% 
+  
+  # FILTRO DE LOS NA POR EDAD
+  filter(!is.na(QI478))
+```
+
+
+```{r}
+MOV2019_2 <- prep.data(MOV2019)
+```
+
+#2018
+
+```{r}
+NINIO <- haven::read_sav("ENDES/2018/DIT.sav")
+NINIO2 <- read_sav("ENDES/2018/REC41.sav")
+MUJER1 <- read_sav("ENDES/2018/REC42.sav" )
+VACUNA1 <- read_sav("ENDES/2018/REC43.sav")
+VACUNA2 <- read_sav("ENDES/2018/REC95.sav")
+HOGAR1 <- read_sav("ENDES/2018/RECH0.sav")
+HOGAR_MADRE <- read_sav("ENDES/2018/RECH1.sav")
+VIVIENDA1 <- read_sav("ENDES/2018/RECH23.sav")
+MUJER2<- read_sav("ENDES/2018/REC0111.sav")
+region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
+#
+# BD principales
+
+## HHID Y HIDX son las variables de union 
+
+VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = IDX95) 
+
+
+# Otras BD
+
+
+## HHID Y HIDX son las variables de union 
+
+NINIO <- NINIO %>% select(CASEID,QI478,BIDX,BORD) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = BIDX) 
+
+
+NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = MIDX) 
+
+
+
+MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V131,V190) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,QH25A,HV122) %>% 
+  
+  mutate(HIDX = HVIDX,
+         HHID = as.integer(HHID))
+
+## BD intermedias
+VACUNA3 <- VACUNA1 %>% full_join(VACUNA2, by =c("HHID","HIDX","CASEID")) # Union tomando CASEID para no perder casos
+
+NINIO_3 <- NINIO %>% left_join(NINIO2, by = c("HHID","HIDX","CASEID"))
+
+
+
+MUJER_3 <- MUJER1 %>% 
+  
+  left_join(MUJER2, by = c("HHID","CASEID")) %>% 
+  mutate(HIDX = as.numeric(str_sub(CASEID,-2,-1))) %>% 
+  
+  left_join(HOGAR_MADRE, by = c("HHID","HIDX"))
+
+
+## BD final
+MOV2019<- VACUNA3 %>% 
+  
+  left_join(NINIO_3, by = c("HHID","HIDX","CASEID")) %>% 
+  
+  left_join(MUJER_3, by = c("HHID","CASEID")) %>% 
+  
+  # FILTRO DE LOS NA POR EDAD
+  filter(!is.na(QI478))
+```
+
+# 2017
+
+```{r}
+NINIO <- haven::read_sav("ENDES/2017/DIT.sav")
+NINIO2 <- read_sav("ENDES/2017/REC41.sav")
+MUJER1 <- read_sav("ENDES/2017/REC42.sav" )
+VACUNA1 <- read_sav("ENDES/2017/REC43.sav")
+VACUNA2 <- read_sav("ENDES/2017/REC95.sav")
+HOGAR1 <- read_sav("ENDES/2017/RECH0.sav")
+HOGAR_MADRE <- read_sav("ENDES/2017/RECH1.sav")
+VIVIENDA1 <- read_sav("ENDES/2017/RECH23.sav")
+MUJER2<- read_sav("ENDES/2017/REC0111.sav")
+region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
+#
+# BD principales
+
+## HHID Y HIDX son las variables de union 
+
+VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = IDX95) 
+
+
+# Otras BD
+
+
+## HHID Y HIDX son las variables de union 
+
+NINIO <- NINIO %>% select(CASEID,QI478,BIDX,BORD) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = BIDX) 
+
+
+NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = MIDX) 
+
+
+
+MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V131,V190) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,QH25A,HV122) %>% 
+  
+  mutate(HIDX = HVIDX,
+         HHID = as.integer(HHID))
+
+## BD intermedias
+VACUNA3 <- VACUNA1 %>% full_join(VACUNA2, by =c("HHID","HIDX","CASEID")) # Union tomando CASEID para no perder casos
+
+NINIO_3 <- NINIO %>% left_join(NINIO2, by = c("HHID","HIDX","CASEID"))
+
+
+
+MUJER_3 <- MUJER1 %>% 
+  
+  left_join(MUJER2, by = c("HHID","CASEID")) %>% 
+  mutate(HIDX = as.numeric(str_sub(CASEID,-2,-1))) %>% 
+  
+  left_join(HOGAR_MADRE, by = c("HHID","HIDX"))
+
+
+## BD final
+MOV2019<- VACUNA3 %>% 
+  
+  left_join(NINIO_3, by = c("HHID","HIDX","CASEID")) %>% 
+  
+  left_join(MUJER_3, by = c("HHID","CASEID")) %>% 
+  
+  # FILTRO DE LOS NA POR EDAD
+  filter(!is.na(QI478))
+```
+
+# 2016
+
+```{r}
+NINIO <- haven::read_sav("ENDES/2016/DIT.sav")
+NINIO2 <- read_sav("ENDES/2016/REC41.sav")
+MUJER1 <- read_sav("ENDES/2016/REC42.sav" )
+VACUNA1 <- read_sav("ENDES/2016/REC43.sav")
+VACUNA2 <- read_sav("ENDES/2016/REC95.sav")
+HOGAR1 <- read_sav("ENDES/2016/RECH0.sav")
+HOGAR_MADRE <- read_sav("ENDES/2016/RECH1.sav")
+VIVIENDA1 <- read_sav("ENDES/2016/RECH23.sav")
+MUJER2<- read_sav("ENDES/2016/REC0111.sav")
+region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
+#
+# BD principales
+
+## HHID Y HIDX son las variables de union 
+
+VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = IDX95) 
+
+
+# Otras BD
+
+
+## HHID Y HIDX son las variables de union 
+
+NINIO <- NINIO %>% select(CASEID,QI478,BIDX,BORD) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = BIDX) 
+
+
+NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = MIDX) 
+
+
+
+MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V131,V190) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,QH25A,HV122) %>% 
+  
+  mutate(HIDX = HVIDX,
+         HHID = as.integer(HHID))
+
+## BD intermedias
+VACUNA3 <- VACUNA1 %>% full_join(VACUNA2, by =c("HHID","HIDX","CASEID")) # Union tomando CASEID para no perder casos
+
+NINIO_3 <- NINIO %>% left_join(NINIO2, by = c("HHID","HIDX","CASEID"))
+
+
+
+MUJER_3 <- MUJER1 %>% 
+  
+  left_join(MUJER2, by = c("HHID","CASEID")) %>% 
+  mutate(HIDX = as.numeric(str_sub(CASEID,-2,-1))) %>% 
+  
+  left_join(HOGAR_MADRE, by = c("HHID","HIDX"))
+
+
+## BD final
+MOV2019<- VACUNA3 %>% 
+  
+  left_join(NINIO_3, by = c("HHID","HIDX","CASEID")) %>% 
+  
+  left_join(MUJER_3, by = c("HHID","CASEID")) %>% 
+  
+  # FILTRO DE LOS NA POR EDAD
+  filter(!is.na(QI478))
+```
+
+# 2015
+
+```{r}
+NINIO <- haven::read_sav("ENDES/2015/DIT.sav")
+NINIO2 <- read_sav("ENDES/2015/REC41.sav")
+MUJER1 <- read_sav("ENDES/2015/REC42.sav" )
+VACUNA1 <- read_sav("ENDES/2015/REC43.sav")
+VACUNA2 <- read_sav("ENDES/2015/REC95.sav") # EDAD
+HOGAR1 <- read_sav("ENDES/2015/RECH0.sav")
+HOGAR_MADRE <- read_sav("ENDES/2015/RECH1.sav")
+VIVIENDA1 <- read_sav("ENDES/2015/RECH23.sav")
+MUJER2<- read_sav("ENDES/2015/REC0111.sav")
+region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
+#
+# BD principales
+
+## HHID Y HIDX son las variables de union 
+
+VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = IDX95) 
+
+
+# Otras BD
+
+
+## HHID Y HIDX son las variables de union 
+
+NINIO <- NINIO %>% select(CASEID,QI478,BIDX,BORD) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = BIDX) 
+
+
+NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = MIDX) 
+
+
+
+MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V131,V190) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,QH25A,HV122) %>% 
+  
+  mutate(HIDX = HVIDX,
+         HHID = as.integer(HHID))
+
+## BD intermedias
+VACUNA3 <- VACUNA1 %>% full_join(VACUNA2, by =c("HHID","HIDX","CASEID")) # Union tomando CASEID para no perder casos
+
+NINIO_3 <- NINIO %>% left_join(NINIO2, by = c("HHID","HIDX","CASEID"))
+
+
+
+MUJER_3 <- MUJER1 %>% 
+  
+  left_join(MUJER2, by = c("HHID","CASEID")) %>% 
+  mutate(HIDX = as.numeric(str_sub(CASEID,-2,-1))) %>% 
+  
+  left_join(HOGAR_MADRE, by = c("HHID","HIDX"))
+
+
+## BD final
+MOV2019<- VACUNA3 %>% 
+  
+  left_join(NINIO_3, by = c("HHID","HIDX","CASEID")) %>% 
+  
+  left_join(MUJER_3, by = c("HHID","CASEID")) %>% 
+  
+  # FILTRO DE LOS NA POR EDAD
+  filter(!is.na(QI478))
+
+
+```
+
+# 2014
+
+```{r}
+NINIO <- haven::read_sav("ENDES/2014/DIT.sav")
+NINIO2 <- read_sav("ENDES/2014/REC41.sav")
+MUJER1 <- read_sav("ENDES/2014/REC42.sav" )
+VACUNA1 <- read_sav("ENDES/2014/REC43.sav")
+VACUNA2 <- read_sav("ENDES/2014/REC95.sav")
+HOGAR1 <- read_sav("ENDES/2014/RECH0.sav")
+HOGAR_MADRE <- read_sav("ENDES/2014/RECH1.sav")
+VIVIENDA1 <- read_sav("ENDES/2014/RECH23.sav")
+MUJER2<- read_sav("ENDES/2014/REC0111.sav")
+region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
+#
+# BD principales
+
+## HHID Y HIDX son las variables de union 
+
+VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = IDX95) 
+
+
+# Otras BD
+
+
+## HHID Y HIDX son las variables de union 
+
+NINIO <- NINIO %>% select(CASEID,QI478,BIDX,BORD) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = BIDX) 
+
+
+NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = MIDX) 
+
+
+
+MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V131,V190) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,QH25A,HV122) %>% 
+  
+  mutate(HIDX = HVIDX,
+         HHID = as.integer(HHID))
+
+## BD intermedias
+VACUNA3 <- VACUNA1 %>% full_join(VACUNA2, by =c("HHID","HIDX","CASEID")) # Union tomando CASEID para no perder casos
+
+NINIO_3 <- NINIO %>% left_join(NINIO2, by = c("HHID","HIDX","CASEID"))
+
+
+
+MUJER_3 <- MUJER1 %>% 
+  
+  left_join(MUJER2, by = c("HHID","CASEID")) %>% 
+  mutate(HIDX = as.numeric(str_sub(CASEID,-2,-1))) %>% 
+  
+  left_join(HOGAR_MADRE, by = c("HHID","HIDX"))
+
+
+## BD final
+MOV2019<- VACUNA3 %>% 
+  
+  left_join(NINIO_3, by = c("HHID","HIDX","CASEID")) %>% 
+  
+  left_join(MUJER_3, by = c("HHID","CASEID")) %>% 
+  
+  # FILTRO DE LOS NA POR EDAD
+  filter(!is.na(QI478))
+```
+
+# 2013
+
+```{r}
+NINIO <- haven::read_sav("ENDES/2013/DIT.sav")
+NINIO2 <- read_sav("ENDES/2013/REC41.sav")
+MUJER1 <- read_sav("ENDES/2013/REC42.sav" )
+VACUNA1 <- read_sav("ENDES/2013/REC43.sav")
+VACUNA2 <- read_sav("ENDES/2013/REC95.sav")
+HOGAR1 <- read_sav("ENDES/2013/RECH0.sav")
+HOGAR_MADRE <- read_sav("ENDES/2013/RECH1.sav")
+VIVIENDA1 <- read_sav("ENDES/2013/RECH23.sav")
+MUJER2<- read_sav("ENDES/2013/REC0111.sav")
+region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
+#
+# BD principales
+
+## HHID Y HIDX son las variables de union 
+
+VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = IDX95) 
+
+
+# Otras BD
+
+
+## HHID Y HIDX son las variables de union 
+
+NINIO <- NINIO %>% select(CASEID,QI478,BIDX,BORD) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = BIDX) 
+
+
+NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = MIDX) 
+
+
+
+MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V131,V190) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,QH25A,HV122) %>% 
+  
+  mutate(HIDX = HVIDX,
+         HHID = as.integer(HHID))
+
+## BD intermedias
+VACUNA3 <- VACUNA1 %>% full_join(VACUNA2, by =c("HHID","HIDX","CASEID")) # Union tomando CASEID para no perder casos
+
+NINIO_3 <- NINIO %>% left_join(NINIO2, by = c("HHID","HIDX","CASEID"))
+
+
+
+MUJER_3 <- MUJER1 %>% 
+  
+  left_join(MUJER2, by = c("HHID","CASEID")) %>% 
+  mutate(HIDX = as.numeric(str_sub(CASEID,-2,-1))) %>% 
+  
+  left_join(HOGAR_MADRE, by = c("HHID","HIDX"))
+
+
+## BD final
+MOV2019<- VACUNA3 %>% 
+  
+  left_join(NINIO_3, by = c("HHID","HIDX","CASEID")) %>% 
+  
+  left_join(MUJER_3, by = c("HHID","CASEID")) %>% 
+  
+  # FILTRO DE LOS NA POR EDAD
+  filter(!is.na(QI478))
+```
+
+# 2012
+
+```{r}
+NINIO <- haven::read_sav("ENDES/2012/DIT.sav")
+NINIO2 <- read_sav("ENDES/2012/REC41.sav")
+MUJER1 <- read_sav("ENDES/2012/REC42.sav" )
+VACUNA1 <- read_sav("ENDES/2012/REC43.sav")
+VACUNA2 <- read_sav("ENDES/2012/REC95.sav")
+HOGAR1 <- read_sav("ENDES/2012/RECH0.sav")
+HOGAR_MADRE <- read_sav("ENDES/2012/RECH1.sav")
+VIVIENDA1 <- read_sav("ENDES/2012/RECH23.sav")
+MUJER2<- read_sav("ENDES/2012/REC0111.sav")
+region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
+#
+# BD principales
+
+## HHID Y HIDX son las variables de union 
+
+VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = IDX95) 
+
+
+# Otras BD
+
+
+## HHID Y HIDX son las variables de union 
+
+NINIO <- NINIO %>% select(CASEID,QI478,BIDX,BORD) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = BIDX) 
+
+
+NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = MIDX) 
+
+
+
+MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V131,V190) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,QH25A,HV122) %>% 
+  
+  mutate(HIDX = HVIDX,
+         HHID = as.integer(HHID))
+
+## BD intermedias
+VACUNA3 <- VACUNA1 %>% full_join(VACUNA2, by =c("HHID","HIDX","CASEID")) # Union tomando CASEID para no perder casos
+
+NINIO_3 <- NINIO %>% left_join(NINIO2, by = c("HHID","HIDX","CASEID"))
+
+
+
+MUJER_3 <- MUJER1 %>% 
+  
+  left_join(MUJER2, by = c("HHID","CASEID")) %>% 
+  mutate(HIDX = as.numeric(str_sub(CASEID,-2,-1))) %>% 
+  
+  left_join(HOGAR_MADRE, by = c("HHID","HIDX"))
+
+
+## BD final
+MOV2019<- VACUNA3 %>% 
+  
+  left_join(NINIO_3, by = c("HHID","HIDX","CASEID")) %>% 
+  
+  left_join(MUJER_3, by = c("HHID","CASEID")) %>% 
+  
+  # FILTRO DE LOS NA POR EDAD
+  filter(!is.na(QI478))
+```
+
+
+# 2011
+
+```{r}
+NINIO <- haven::read_sav("ENDES/2011/DIT.sav")
+NINIO2 <- read_sav("ENDES/2011/REC41.sav")
+MUJER1 <- read_sav("ENDES/2011/REC42.sav" )
+VACUNA1 <- read_sav("ENDES/2011/REC43.sav")
+VACUNA2 <- read_sav("ENDES/2011/REC95.sav")
+HOGAR1 <- read_sav("ENDES/2011/RECH0.sav")
+HOGAR_MADRE <- read_sav("ENDES/2011/RECH1.sav")
+VIVIENDA1 <- read_sav("ENDES/2011/RECH23.sav")
+MUJER2<- read_sav("ENDES/2011/REC0111.sav")
+region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
+#
+# BD principales
+
+## HHID Y HIDX son las variables de union 
+
+VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = IDX95) 
+
+
+# Otras BD
+
+
+## HHID Y HIDX son las variables de union 
+
+NINIO <- NINIO %>% select(CASEID,QI478,BIDX,BORD) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = BIDX) 
+
+
+NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = MIDX) 
+
+
+
+MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V131,V190) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,QH25A,HV122) %>% 
+  
+  mutate(HIDX = HVIDX,
+         HHID = as.integer(HHID))
+
+## BD intermedias
+VACUNA3 <- VACUNA1 %>% full_join(VACUNA2, by =c("HHID","HIDX","CASEID")) # Union tomando CASEID para no perder casos
+
+NINIO_3 <- NINIO %>% left_join(NINIO2, by = c("HHID","HIDX","CASEID"))
+
+
+
+MUJER_3 <- MUJER1 %>% 
+  
+  left_join(MUJER2, by = c("HHID","CASEID")) %>% 
+  mutate(HIDX = as.numeric(str_sub(CASEID,-2,-1))) %>% 
+  
+  left_join(HOGAR_MADRE, by = c("HHID","HIDX"))
+
+
+## BD final
+MOV2019<- VACUNA3 %>% 
+  
+  left_join(NINIO_3, by = c("HHID","HIDX","CASEID")) %>% 
+  
+  left_join(MUJER_3, by = c("HHID","CASEID")) %>% 
+  
+  # FILTRO DE LOS NA POR EDAD
+  filter(!is.na(QI478))
+```
+
+# 2010
+
+```{r}
+NINIO <- haven::read_sav("ENDES/2010/DIT.sav")
+NINIO2 <- read_sav("ENDES/2010/REC41.sav")
+MUJER1 <- read_sav("ENDES/2010/REC42.sav" )
+VACUNA1 <- read_sav("ENDES/2010/REC43.sav")
+VACUNA2 <- read_sav("ENDES/2010/REC95.sav")
+HOGAR1 <- read_sav("ENDES/2010/RECH0.sav")
+HOGAR_MADRE <- read_sav("ENDES/2010/RECH1.sav")
+VIVIENDA1 <- read_sav("ENDES/2010/RECH23.sav")
+MUJER2<- read_sav("ENDES/2010/REC0111.sav")
+region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
+#
+# BD principales
+
+## HHID Y HIDX son las variables de union 
+
+VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = IDX95) 
+
+
+# Otras BD
+
+
+## HHID Y HIDX son las variables de union 
+
+NINIO <- NINIO %>% select(CASEID,QI478,BIDX,BORD) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = BIDX) 
+
+
+NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
+         
+         HIDX = MIDX) 
+
+
+
+MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V131,V190) %>% 
+  
+  mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
+
+
+
+HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,QH25A,HV122) %>% 
+  
+  mutate(HIDX = HVIDX,
+         HHID = as.integer(HHID))
+
+## BD intermedias
+VACUNA3 <- VACUNA1 %>% full_join(VACUNA2, by =c("HHID","HIDX","CASEID")) # Union tomando CASEID para no perder casos
+
+NINIO_3 <- NINIO %>% left_join(NINIO2, by = c("HHID","HIDX","CASEID"))
+
+
+
+MUJER_3 <- MUJER1 %>% 
+  
+  left_join(MUJER2, by = c("HHID","CASEID")) %>% 
+  mutate(HIDX = as.numeric(str_sub(CASEID,-2,-1))) %>% 
+  
+  left_join(HOGAR_MADRE, by = c("HHID","HIDX"))
+
+
+## BD final
+MOV2019<- VACUNA3 %>% 
+  
+  left_join(NINIO_3, by = c("HHID","HIDX","CASEID")) %>% 
+  
+  left_join(MUJER_3, by = c("HHID","CASEID")) %>% 
+  
+  # FILTRO DE LOS NA POR EDAD
+  filter(!is.na(QI478))
+```
+
+
