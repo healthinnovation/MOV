@@ -21,120 +21,8 @@ library(gtsummary)
 library(survey)
 library(RColorBrewer)
 library(sf)
-```
 
-```{r}
-NINIO <- read.csv("ENDES/2020/DIT.csv", sep = ";" )
-NINIO2 <- read.csv("ENDES/2020/REC41.csv", sep = ";" )
-MUJER1 <- read.csv("ENDES/2020/REC42.csv", sep = ";" )
-VACUNA1 <- read.csv("ENDES/2020/REC43.csv", sep = ";" )
-VACUNA2 <- read.csv("ENDES/2020/REC95.csv", sep = ";" )
-HOGAR1 <- read.csv("ENDES/2020/RECH0.csv", sep = ";" )
-HOGAR_MADRE <- read.csv("ENDES/2020/RECH1.csv", sep = ";" )
-VIVIENDA1 <- read.csv("ENDES/2020/RECH23.csv", sep = ";" )
-MUJER2<- read.csv("ENDES/2020/REC0111.csv", sep = ";" )
-NINIO_ANEMIA<- read.csv("ENDES/2020/RECH6.csv", sep = ";" )
 region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
-```
-
-
-# PRE UNION
-
-```{r, warning=F, message=F, error=F}
-
-# BD principales
-# 
-# ## HHID Y HIDX son las variables de union 
-# 
-# VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
-#   
-#   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
-# 
-# VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
-#   
-#   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
-#          
-#          HIDX = IDX95) 
-# 
-# 
-# # Otras BD
-# 
-# 
-# ## HHID Y HIDX son las variables de union 
-# 
-# NINIO <- NINIO %>% select(CASEID,QI478,BIDX,BORD) %>% 
-#   
-#   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
-#          
-#          HIDX = BIDX) 
-# 
-# 
-# NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
-#   
-#   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
-#          
-#          HIDX = MIDX) 
-# 
-# 
-# 
-# MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
-#   
-#   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
-# 
-# 
-# 
-# MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V131,V190) %>% 
-#   
-#   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
-# 
-# 
-# 
-# HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,QH25A,HV122) %>% 
-#   
-#   mutate(HIDX = HVIDX)
-
-
-
-# NINIO_ANEMIA <- NINIO_ANEMIA %>% select(HHID,HC0,HC1)
-# 
-# # Caracteristicas por Hogar
-# 
-# HOGAR1<- HOGAR1 %>% select(HHID,HV003,HV000:HV002A,HV005,HV022,HV007,HV008,HV021,HV023:HV026) 
-# VIVIENDA1<- VIVIENDA1 %>% select(HHID,HV270)
-#
-
-
-```
-
-# UNION
-
-```{r, warning=F, message=F, error=F}
-
-# ## BD intermedias
-# VACUNA_2020 <- VACUNA1 %>% full_join(VACUNA2, by =c("HHID","HIDX","CASEID")) # Union tomando CASEID para no perder casos
-# 
-# NINIO_2020 <- NINIO %>% left_join(NINIO2, by = c("HHID","HIDX","CASEID"))
-# 
-# 
-# 
-# MUJER_2021 <- MUJER1 %>% 
-#   
-#   left_join(MUJER2, by = c("HHID","CASEID")) %>% 
-#   mutate(HIDX = as.numeric(str_sub(CASEID,-2,-1))) %>% 
-#   
-#   left_join(HOGAR_MADRE, by = c("HHID","HIDX"))
-# 
-# 
-# ## BD final
-# MOV2020<- VACUNA_2020 %>% 
-#   
-#   left_join(NINIO_2020, by = c("HHID","HIDX","CASEID")) %>% 
-#   
-#   left_join(MUJER_2021, by = c("HHID","CASEID")) %>% 
-#   
-#   # FILTRO DE LOS NA POR EDAD
-#   filter(!is.na(QI478))
-
 ```
 
 # EDITADO
@@ -322,25 +210,25 @@ df3<-df2 %>%
   
   mutate(
     ptv = map(.x = df , 
-                 .f = ~svyby(~MOV_PTV_e1, by=~DEPARTAMEN, design =.x, FUN=svyciprop, vartype=c('se','ci')) %>%
+                 .f = ~svyby(~MOV_PTV_e1, by=~DEPARTAMEN, design =.x, FUN=svyciprop, na.rm.all = T) %>%
                 
                 mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV_COMPLETA") %>% 
                 select(-`se.as.numeric(MOV_PTV_e1)`,-MOV_PTV_e1) %>% data.frame),
     
     neumo = map(.x = df , 
-                 .f = ~svyby(~MOV_NEUMO_e1, by=~DEPARTAMEN, design =.x, FUN=svyciprop, vartype=c('se','ci')) %>%
+                 .f = ~svyby(~MOV_NEUMO_e1, by=~DEPARTAMEN, design =.x, FUN=svyciprop,na.rm.all = T) %>%
                   
                   mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO_COMPLETA") %>% 
                   select(-`se.as.numeric(MOV_NEUMO_e1)`,-MOV_NEUMO_e1) %>% data.frame),
     
     influ = map(.x = df , 
-                 .f = ~svyby(~MOV_INFLU_e1, by=~DEPARTAMEN, design =.x, FUN=svyciprop, vartype=c('se','ci')) %>%
+                 .f = ~svyby(~MOV_INFLU_e1, by=~DEPARTAMEN, design =.x, FUN=svyciprop,na.rm.all = T) %>%
                   
                   mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU_COMPLETA") %>%
                   select(-`se.as.numeric(MOV_INFLU_e1)`,-MOV_INFLU_e1) %>% data.frame),
     
     rota = map(.x = df , 
-                 .f = ~svyby(~MOV_ROTA_e1, by=~DEPARTAMEN, design =.x, FUN=svyciprop, vartype=c('se','ci')) %>%
+                 .f = ~svyby(~MOV_ROTA_e1, by=~DEPARTAMEN, design =.x, FUN=svyciprop,na.rm.all = T) %>%
                  
                  mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA_COMPLETA") %>%
                  select(-`se.as.numeric(MOV_ROTA_e1)`,-MOV_ROTA_e1) %>% data.frame) ) %>%

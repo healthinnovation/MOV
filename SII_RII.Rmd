@@ -14,12 +14,17 @@ library(sf)
 
 ```{r}
 # Base de trabajo
-MOV2020_2 <- read.csv("./BD.INTERMEDIAS/MOV2020_2.csv")
-region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
+MOV_GENERAL <- read.csv("./BD.INTERMEDIAS/mov_general.csv")
 
-#BD en survey
-df <- svydesign(id =~ V001, strata =~ V022, probs=~V005, data=MOV2020_2) 
-
+df2<-MOV_GENERAL %>% 
+  
+  filter(!is.na(MOV_PTV_e1)) %>% 
+  
+  group_by(ANIO) %>% 
+  nest() %>%
+  mutate(
+    df= map(.x = data, 
+      .f = ~svydesign(id =~ V001, strata =~ V022, probs=~V005, data=.x))) 
 
 options(survey.lonely.psu="remove")
 ```
@@ -29,7 +34,7 @@ options(survey.lonely.psu="remove")
 ## DEPARTAMENTOS
 
 ```{r}
-PTV<-svyby(~MOV_PTV_e1_2, by=~DEPARTAMEN, design =df, FUN=svytotal) %>% 
+hr<-svyby(~MOV_PTV_e1_2, by=~DEPARTAMEN, design =df, FUN=svytotal) %>% 
   
   mutate(vacuna = MOV_PTV_e1_2,vacunatipo = "PTV") %>% 
   
