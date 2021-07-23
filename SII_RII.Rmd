@@ -27,6 +27,7 @@ df2<-MOV_GENERAL %>%
       .f = ~svydesign(id =~ V001, strata =~ V022, probs=~V005, data=.x))) 
 
 options(survey.lonely.psu="remove")
+
 ```
 
 # EVENTO
