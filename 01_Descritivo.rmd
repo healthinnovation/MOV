@@ -89,7 +89,7 @@ prep.data <-function(MOV2020){ MOV2020 %>%
          
          
          
-         EDU_MADRE = factor(V106, levels = c(0,1,2,3), labels = c("sin educ","primaria","secundaria","superior")),
+         EDU_MADRE = as.factor(factor(V106, levels = c(0,1,2,3), labels = c("sin educ","primaria","secundaria","superior"))),
          
          
          ETNIA_MADRE = factor(V131, levels = c(1:12), labels = c("quechua","aimara","ashaninka","awajun",

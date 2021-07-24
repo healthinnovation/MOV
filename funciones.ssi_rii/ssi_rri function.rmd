@@ -10,16 +10,19 @@ h_prop<-
    function(data) {
    
  data<-
-   data %>% 
-   group_by(vacunatipo) %>% 
+    data %>% 
+   group_by(vacunatipo) %>%  
+    
+    mutate(
+       tasa = (vacuna/total)*10000
+    ) %>% 
    
     # ordenar de - a +
-   arrange(vacuna,.by_group = T) %>% 
+   arrange(tasa,.by_group = T) %>% 
    
      # Calculo de hr
    mutate(pop= vacuna/sum(vacuna),
-          
-          tasa = (vacuna/total)*100000,
+          #tasa = (vacuna/total)*10000,
           popr = cumsum(pop)/sum(pop),
           pop.popr = popr - pop,
           hr2 = round((pop.popr + popr)/2,3)*100
@@ -37,18 +40,22 @@ h_prop<-
 sii_rii<-function(data) {
    
    
-   bd <- data.frame(hr2 = c(0,1))
+   bd <- data.frame(hr2 = c(0,100))
  
  data<-
    data %>% 
-   group_by(vacunatipo) %>% 
+   group_by(vacunatipo) %>%  
+    
+    mutate(
+       tasa = (vacuna/total)*10000
+    ) %>% 
    
     # ordenar de - a +
-   arrange(vacuna,.by_group = T) %>% 
+   arrange(tasa,.by_group = T) %>% 
    
      # Calculo de hr
    mutate(pop= vacuna/sum(vacuna),
-          tasa = (vacuna/total)*100000,
+          #tasa = (vacuna/total)*10000,
           popr = cumsum(pop)/sum(pop),
           pop.popr = popr - pop,
           hr2 = round((pop.popr + popr)/2,3)*100
@@ -64,7 +71,7 @@ sii_rii<-function(data) {
    mutate(
      
       # lm para ssi 
-     modelo = map(.x = data, .f = ~lm(formula = vacuna~hr2, data = .x)),
+     modelo = map(.x = data, .f = ~lm(formula = tasa~hr2, data = .x)),
      
       # extraer beta
      modelo2 = map(.x = modelo, 
@@ -84,7 +91,7 @@ sii_rii<-function(data) {
     # rri f(1)/f(0)
    mutate(rii = map_dbl(.x = modelo,
                 .f =~predict(.x,
-                             newdata = bd %>% filter(hr2 == 1))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
+                             newdata = bd %>% filter(hr2 == 100))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
           
           ssi = estimate) %>% 
    
@@ -105,14 +112,15 @@ sii_rii<-function(data) {
 h_prop.map <-
    function(data) {
 
- 
-
    data<-
       data %>% 
    group_by(DEPARTAMEN,vacunatipo) %>% 
+      mutate(
+         tasa = (vacuna/total)*10000 
+      ) %>% 
    
     # ordenar de - a +
-   arrange(vacuna,.by_group = T) %>% 
+   arrange(tasa,.by_group = T) %>% 
    
      # Calculo de hr
    mutate(pop= vacuna/sum(vacuna),
@@ -138,15 +146,20 @@ h_prop.map <-
 sii_rii_map<-function(data) {
    
    
-   bd <- data.frame(hr2 = c(0,1))
+   bd <- data.frame(hr2 = c(0,100))
  
 
    data<-
       data %>% 
+      
    group_by(DEPARTAMEN,vacunatipo) %>% 
+      
+      mutate(
+         tasa = (vacuna/total)*10000
+      ) %>% 
    
     # ordenar de - a +
-   arrange(vacuna,.by_group = T) %>% 
+   arrange(tasa,.by_group = T) %>% 
    
      # Calculo de hr
    mutate(pop= vacuna/sum(vacuna),
@@ -166,7 +179,7 @@ sii_rii_map<-function(data) {
    mutate(
      
       # lm para ssi 
-     modelo = map(.x = data, .f = ~lm(formula = vacuna~hr2, data = .x)),
+     modelo = map(.x = data, .f = ~lm(formula = tasa~hr2, data = .x)),
      
       # extraer beta
      modelo2 = map(.x = modelo, 
@@ -184,7 +197,7 @@ sii_rii_map<-function(data) {
     # rri f(1)/f(0)
    mutate(rii = map_dbl(.x = modelo,
                         .f =~predict(.x,
-                                     newdata = bd %>% filter(hr2 == 1))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
+                                     newdata = bd %>% filter(hr2 == 100))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
           
           sii = estimate) %>% 
       
@@ -201,7 +214,7 @@ sii_rii_map<-function(data) {
 # grafico de verificación
 
 ```{r}
-gg<-function(df2){ ggplot(data = df3$total[[1]] , aes(x =hr2 , y = tasa)) +
+gg<-function(df2){ ggplot(data = df2 , aes(x =hr2 , y = tasa)) +
   
   geom_point() +
   
