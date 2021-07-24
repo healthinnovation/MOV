@@ -3,7 +3,7 @@ df3<-
   mutate(
     
     ptv = map(.x =df,
-              .f = ~svyby(~MOV_PTV_e1, by=~DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
+              .f = ~svyby(~MOV_PTV_e1, by=~EDU_MADRE, design =.x, FUN=svytotal, na.rm = T) %>% 
                 
                 mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV") %>% 
                 
@@ -11,21 +11,21 @@ df3<-
                 
                 left_join(
                   
-                  svytotal(~DEPARTAMEN, design = .x) %>%
+                  svytotal(~EDU_MADRE, design = .x) %>%
                     
                     data.frame() %>%
                     
-                    rownames_to_column("DEPARTAMEN") %>%
+                    rownames_to_column("EDU_MADRE") %>%
                     
                     mutate(
-                      DEPARTAMEN = substring(DEPARTAMEN,11))) %>%
+                      EDU_MADRE = substring(EDU_MADRE,10))) %>%
                 
-                select(DEPARTAMEN,total,vacuna,vacunatipo,se,-`SE`)),
+                select(EDU_MADRE,total,vacuna,vacunatipo,se,-`SE`)),
     
     
     
     neumo = map(.x =df,
-                .f = ~svyby(~MOV_NEUMO_e1, by=~DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
+                .f = ~svyby(~MOV_NEUMO_e1, by=~EDU_MADRE, design =.x, FUN=svytotal, na.rm = T) %>% 
                   
                   mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO") %>% 
                   
@@ -33,20 +33,20 @@ df3<-
                   
                   left_join(
                     
-                    svytotal(~DEPARTAMEN, design = .x) %>%
+                    svytotal(~EDU_MADRE, design = .x) %>%
                       
                       data.frame() %>%
                       
-                      rownames_to_column("DEPARTAMEN") %>%
+                      rownames_to_column("EDU_MADRE") %>%
                       
                       mutate(
-                        DEPARTAMEN = substring(DEPARTAMEN,11))) %>%
+                        EDU_MADRE = substring(EDU_MADRE,10))) %>%
                   
-                  select(DEPARTAMEN,total,vacuna,vacunatipo,se,-`SE`)),
+                  select(EDU_MADRE,total,vacuna,vacunatipo,se,-`SE`)),
     
     
     influ = map(.x =df,
-                .f = ~svyby(~MOV_INFLU_e1, by=~DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
+                .f = ~svyby(~MOV_INFLU_e1, by=~EDU_MADRE, design =.x, FUN=svytotal, na.rm = T) %>% 
                   
                   mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU") %>% 
                   
@@ -54,20 +54,20 @@ df3<-
                   
                   left_join(
                     
-                    svytotal(~DEPARTAMEN, design = .x) %>%
+                    svytotal(~EDU_MADRE, design = .x) %>%
                       
                       data.frame() %>%
                       
-                      rownames_to_column("DEPARTAMEN") %>%
+                      rownames_to_column("EDU_MADRE") %>%
                       
                       mutate(
-                        DEPARTAMEN = substring(DEPARTAMEN,11))) %>%
+                        EDU_MADRE = substring(EDU_MADRE,10))) %>%
                   
-                  select(DEPARTAMEN,total,vacuna,vacunatipo,se,-`SE`)),
+                  select(EDU_MADRE,total,vacuna,vacunatipo,se,-`SE`)),
     
     
     rota  = map(.x =df,
-                .f = ~svyby(~MOV_ROTA_e1, by=~DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
+                .f = ~svyby(~MOV_ROTA_e1, by=~EDU_MADRE, design =.x, FUN=svytotal, na.rm = T) %>% 
                   
                   mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA") %>% 
                   
@@ -75,16 +75,16 @@ df3<-
                   
                   left_join(
                     
-                    svytotal(~DEPARTAMEN, design = .x) %>%
+                    svytotal(~EDU_MADRE, design = .x) %>%
                       
                       data.frame() %>%
                       
-                      rownames_to_column("DEPARTAMEN") %>%
+                      rownames_to_column("EDU_MADRE") %>%
                       
                       mutate(
-                        DEPARTAMEN = substring(DEPARTAMEN,11))) %>%
+                        CREDLUGAR = substring(EDU_MADRE,10))) %>%
                   
-                  select(DEPARTAMEN,total,vacuna,vacunatipo,se,-`SE`))) %>% 
+                  select(EDU_MADRE,total,vacuna,vacunatipo,se,-`SE`))) %>% 
   
   
   mutate(
@@ -98,12 +98,30 @@ df3<-
              .f = ~h_prop(.x)),
     
     ssirii = map(.x = total,
-                 .f = ~sii_rii(.x))
+                 .f = ~sii_rii(.x)),
     
-  ) %>% 
+    
+    graf = map(.x = hr,
+               .f = ~gg(.x))
+    
+  ) 
+
+# SII y RII por año (2010 - 2020)
+sii_rii.t <-
+  df3 %>% select(ANIO,ssirii) %>% 
+  unnest(cols = c(ssirii)) %>% 
+  as.data.frame() %>% 
+  ungroup()
+
+# Grafico: tasa vs HR
+ggsave("rr.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
+
+
+# sii/rii por año: grafico
+
+ggplot(sii_rii.t) +
   
-  select(ANIO,total,hr,ssirii)
+  geom_line(aes(x = as.factor(ANIO), y = ssi, col = vacunatipo, group = vacunatipo)) 
 
-              
-df3
 
+df3$hr[[1]]

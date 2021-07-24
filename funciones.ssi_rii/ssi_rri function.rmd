@@ -19,7 +19,7 @@ h_prop<-
      # Calculo de hr
    mutate(pop= vacuna/sum(vacuna),
           
-          tasa = (vacuna/total)*10000,
+          tasa = (vacuna/total)*100000,
           popr = cumsum(pop)/sum(pop),
           pop.popr = popr - pop,
           hr2 = round((pop.popr + popr)/2,3)*100
@@ -48,7 +48,7 @@ sii_rii<-function(data) {
    
      # Calculo de hr
    mutate(pop= vacuna/sum(vacuna),
-          tasa = (vacuna/total)*10000,
+          tasa = (vacuna/total)*100000,
           popr = cumsum(pop)/sum(pop),
           pop.popr = popr - pop,
           hr2 = round((pop.popr + popr)/2,3)*100
@@ -198,5 +198,16 @@ sii_rii_map<-function(data) {
 }
 ```
 
+# grafico de verificación
 
-
+```{r}
+gg<-function(df2){ ggplot(data = df3$total[[1]] , aes(x =hr2 , y = tasa)) +
+  
+  geom_point() +
+  
+  geom_smooth(method = "lm") +
+  
+  facet_wrap(~vacunatipo)
+   
+}
+```
