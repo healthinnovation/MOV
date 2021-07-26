@@ -125,3 +125,127 @@ ggplot(sii_rii.t) +
 
 
 df3$hr[[1]]
+
+
+
+df3<-
+  df2 %>% 
+  mutate(
+    
+    ptv = map(.x =df,
+              .f = ~svyby(~MOV_PTV_e1, by=~EDAD_MADRE+DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
+                
+                mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV") %>% 
+                
+                select(-MOV_PTV_e1) %>% 
+                
+                left_join(
+                  
+                  svytotal(~EDAD_MADRE, design = .x, na.rm = T) %>%
+                    
+                    data.frame() %>%
+                    
+                    rownames_to_column("EDAD_MADRE") %>%
+                    
+                    mutate(
+                      EDAD_MADRE = substring(EDAD_MADRE,11))) %>%
+                
+                select(DEPARTAMEN,EDAD_MADRE,total,vacuna,vacunatipo,se,-`SE`)),
+    
+    
+    neumo = map(.x =df,
+               .f = ~svyby(~MOV_NEUMO_e1, by=~EDAD_MADRE+DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
+                 
+                 mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO") %>% 
+                 
+                 select(-MOV_NEUMO_e1) %>% 
+                 
+                 left_join(
+                   
+                   svytotal(~EDAD_MADRE, design = .x, na.rm = T) %>%
+                     
+                     data.frame() %>%
+                     
+                     rownames_to_column("EDAD_MADRE") %>%
+                     
+                     mutate(
+                       EDAD_MADRE = substring(EDAD_MADRE,11))) %>%
+                 
+                 select(DEPARTAMEN,EDAD_MADRE,total,vacuna,vacunatipo,se,-`SE`)),
+    
+    
+    
+    rota = map(.x =df,
+               .f = ~svyby(~MOV_ROTA_e1, by=~EDAD_MADRE+DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
+                 
+                 mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA") %>% 
+                 
+                 select(-MOV_ROTA_e1) %>% 
+                 
+                 left_join(
+                   
+                   svytotal(~EDAD_MADRE, design = .x, na.rm = T) %>%
+                     
+                     data.frame() %>%
+                     
+                     rownames_to_column("EDAD_MADRE") %>%
+                     
+                     mutate(
+                       EDAD_MADRE = substring(EDAD_MADRE,11))) %>%
+                 
+                 select(DEPARTAMEN,EDAD_MADRE,total,vacuna,vacunatipo,se,-`SE`)),
+    
+    
+    influ = map(.x =df,
+              .f = ~svyby(~MOV_INFLU_e1, by=~EDAD_MADRE+DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
+                
+                mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU") %>% 
+                
+                select(-MOV_INFLU_e1) %>% 
+                
+                left_join(
+                  
+                  svytotal(~EDAD_MADRE, design = .x, na.rm = T) %>%
+                    
+                    data.frame() %>%
+                    
+                    rownames_to_column("EDAD_MADRE") %>%
+                    
+                    mutate(
+                      EDAD_MADRE = substring(EDAD_MADRE,11))) %>%
+                
+                select(DEPARTAMEN,EDAD_MADRE,total,vacuna,vacunatipo,se,-`SE`))
+    
+  ) %>% 
+  
+  
+  mutate(
+    pretotal1  = map2(.x = ptv, .y = neumo, .f = ~bind_rows(.x,.y)),
+    pretotal2  = map2(.x = influ, .y = rota, .f = ~bind_rows(.x,.y)),
+    
+    total  = map2(.x = pretotal1, .y = pretotal2, .f = ~bind_rows(.x,.y)),
+    
+    hr = map(.x = total,
+             .f = ~h_prop.map(.x)),
+    
+    ssirii = map(.x = total,
+                 .f = ~sii_rii_map(.x))
+    
+  )
+
+
+map<-
+  df3 %>% select(ANIO,ssirii) %>% unnest(cols = c(ssirii)) %>% 
+  
+  full_join(region_shape, by = "DEPARTAMEN")
+
+
+grafic<-ggplot(data = map %>% st_as_sf()) + 
+  
+  geom_sf(aes(fill = sii)) +
+  
+  facet_wrap(~vacunatipo,nrow = 1 )
+
+ggsave("hh.png",grafic)
+  
+  

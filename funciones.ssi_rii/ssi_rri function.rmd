@@ -127,7 +127,7 @@ h_prop.map <-
           
           popr = cumsum(pop)/sum(pop),
           pop.popr = popr - pop,
-          hr2 = round((pop.popr + popr)/2,3)
+          hr2 = round((pop.popr + popr)/2,3)*100
           ) %>% 
    
    select(-pop,-popr,-pop.popr) %>% 
@@ -166,7 +166,7 @@ sii_rii_map<-function(data) {
           
           popr = cumsum(pop)/sum(pop),
           pop.popr = popr - pop,
-          hr2 = round((pop.popr + popr)/2,3)
+          hr2 = round((pop.popr + popr)/2,3)*100
           ) %>% 
    
    select(-pop,-popr,-pop.popr) %>% 
