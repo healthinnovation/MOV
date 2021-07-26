@@ -151,19 +151,11 @@ df3<-
   ) 
 
 # SII y RII por año (2010 - 2020)
-sii_rii.t <-
-  df3 %>% select(ANIO,ssirii) %>% 
+
+df3 %>% select(ANIO,ssirii) %>% 
   unnest(cols = c(ssirii)) %>% 
   as.data.frame() %>% 
-  ungroup()
-
-# Grafico: tasa vs HR
-ggsave("tt.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
-
-
-# sii/rii por año: grafico
-
-sii_rii.t %>% 
+  ungroup() %>% 
   pivot_longer(cols = c(ssi,rii), names_to = "index") %>% 
   
   ggplot() +
@@ -171,6 +163,15 @@ sii_rii.t %>%
   geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
   
   facet_wrap(~index)
+
+  
+# Grafico: tasa vs HR
+ggsave("tt.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
+
+
+
+df3$hr[[1]]
+ 
   
   
 ```
@@ -289,19 +290,11 @@ df3<-
   ) 
 
 # SII y RII por año (2010 - 2020)
-sii_rii.t <-
+
   df3 %>% select(ANIO,ssirii) %>% 
   unnest(cols = c(ssirii)) %>% 
   as.data.frame() %>% 
-  ungroup()
-
-# Grafico: tasa vs HR
-ggsave("qq.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
-
-
-# sii/rii por año: grafico
-
-sii_rii.t %>% 
+  ungroup() %>% 
   pivot_longer(cols = c(ssi,rii), names_to = "index") %>% 
   
   ggplot() +
@@ -309,6 +302,9 @@ sii_rii.t %>%
   geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
   
   facet_wrap(~index)
+
+# Grafico: tasa vs HR
+ggsave("qq.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
 
 
   
@@ -326,7 +322,8 @@ df3<-
     ptv = map(.x =df,
               .f = ~svyby(~MOV_PTV_e1, by=~EDU_MADRE, design =.x, FUN=svytotal, na.rm = T) %>% 
                 
-                mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV") %>% 
+                mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV",
+                       orden =as.numeric(as.factor(EDU_MADRE))) %>% 
                 
                 select(-MOV_PTV_e1) %>% 
                 
@@ -341,14 +338,15 @@ df3<-
                     mutate(
                       EDU_MADRE = substring(EDU_MADRE,10))) %>%
                 
-                select(EDU_MADRE,total,vacuna,vacunatipo,se,-`SE`)),
+                select(EDU_MADRE,orden,total,vacuna,vacunatipo,se,-`SE`)),
     
     
     
     neumo = map(.x =df,
                 .f = ~svyby(~MOV_NEUMO_e1, by=~EDU_MADRE, design =.x, FUN=svytotal, na.rm = T) %>% 
                   
-                  mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO") %>% 
+                  mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO",
+                         orden =as.numeric(as.factor(EDU_MADRE))) %>% 
                   
                   select(-MOV_NEUMO_e1) %>% 
                   
@@ -363,13 +361,14 @@ df3<-
                       mutate(
                         EDU_MADRE = substring(EDU_MADRE,10))) %>%
                   
-                  select(EDU_MADRE,total,vacuna,vacunatipo,se,-`SE`)),
+                  select(EDU_MADRE,orden,total,vacuna,vacunatipo,se,-`SE`)),
     
     
     influ = map(.x =df,
                 .f = ~svyby(~MOV_INFLU_e1, by=~EDU_MADRE, design =.x, FUN=svytotal, na.rm = T) %>% 
                   
-                  mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU") %>% 
+                  mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU",
+                         orden =as.numeric(as.factor(EDU_MADRE))) %>% 
                   
                   select(-MOV_INFLU_e1) %>% 
                   
@@ -384,13 +383,14 @@ df3<-
                       mutate(
                         EDU_MADRE = substring(EDU_MADRE,10))) %>%
                   
-                  select(EDU_MADRE,total,vacuna,vacunatipo,se,-`SE`)),
+                  select(EDU_MADRE,orden,total,vacuna,vacunatipo,se,-`SE`)),
     
     
     rota  = map(.x =df,
                 .f = ~svyby(~MOV_ROTA_e1, by=~EDU_MADRE, design =.x, FUN=svytotal, na.rm = T) %>% 
                   
-                  mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA") %>% 
+                  mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA",
+                         orden =as.numeric(as.factor(EDU_MADRE))) %>% 
                   
                   select(-MOV_ROTA_e1) %>% 
                   
@@ -405,7 +405,7 @@ df3<-
                       mutate(
                         EDU_MADRE = substring(EDU_MADRE,10))) %>%
                   
-                  select(EDU_MADRE,total,vacuna,vacunatipo,se,-`SE`))) %>% 
+                  select(EDU_MADRE,orden,total,vacuna,vacunatipo,se,-`SE`))) %>% 
   
   
   mutate(
@@ -429,27 +429,25 @@ df3<-
 
 
 # SII y RII por año (2010 - 2020)
-sii_rii.t <-
+
   df3 %>% select(ANIO,ssirii) %>% 
   unnest(cols = c(ssirii)) %>% 
   as.data.frame() %>% 
-  ungroup()
-
-# Grafico: tasa vs HR
-ggsave("rr.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
-
-
-# sii/rii por año: grafico
-
-sii_rii.t %>% 
+  ungroup() %>% 
   
   pivot_longer(cols = c(rii,ssi), names_to = "index") %>% 
   
   ggplot() +
   geom_line(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
   geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
-  facet_wrap(~index)
+  facet_wrap(~index, scales = "free")
   
+  ggsave("educ.png",width = 15)
+
+# Grafico: tasa vs HR
+ggsave("rr.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
+
+
 
 
 ```
@@ -465,7 +463,8 @@ df3<-
     ptv = map(.x =df,
               .f = ~svyby(~MOV_PTV_e1, by=~INDICERIQUEZA, design =.x, FUN=svytotal, na.rm = T) %>% 
                 
-                mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV") %>% 
+                mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV",
+                       orden =as.numeric(as.factor(INDICERIQUEZA))) %>% 
                 
                 select(-MOV_PTV_e1) %>% 
                 
@@ -480,14 +479,15 @@ df3<-
                     mutate(
                       INDICERIQUEZA = substring(INDICERIQUEZA,14))) %>%
                 
-                select(INDICERIQUEZA,total,vacuna,vacunatipo,se,-`SE`)),
+                select(INDICERIQUEZA,orden,total,vacuna,vacunatipo,se,-`SE`)),
     
     
     
     neumo = map(.x =df,
                 .f = ~svyby(~MOV_NEUMO_e1, by=~INDICERIQUEZA, design =.x, FUN=svytotal, na.rm = T) %>% 
                   
-                  mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO") %>% 
+                  mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO",
+                         orden =as.numeric(as.factor(INDICERIQUEZA))) %>% 
                   
                   select(-MOV_NEUMO_e1) %>% 
                   
@@ -502,13 +502,14 @@ df3<-
                     mutate(
                       INDICERIQUEZA = substring(INDICERIQUEZA,14))) %>%
                 
-                select(INDICERIQUEZA,total,vacuna,vacunatipo,se,-`SE`)),
+                select(INDICERIQUEZA,orden,total,vacuna,vacunatipo,se,-`SE`)),
     
     
     influ = map(.x =df,
                 .f = ~svyby(~MOV_INFLU_e1, by=~INDICERIQUEZA, design =.x, FUN=svytotal, na.rm = T) %>% 
                   
-                  mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU") %>% 
+                  mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU",
+                         orden =as.numeric(as.factor(INDICERIQUEZA))) %>% 
                   
                   select(-MOV_INFLU_e1) %>% 
                   
@@ -523,13 +524,14 @@ df3<-
                     mutate(
                       INDICERIQUEZA = substring(INDICERIQUEZA,14))) %>%
                 
-                select(INDICERIQUEZA,total,vacuna,vacunatipo,se,-`SE`)),
+                select(INDICERIQUEZA,orden,total,vacuna,vacunatipo,se,-`SE`)),
     
     
     rota  = map(.x =df,
                 .f = ~svyby(~MOV_ROTA_e1, by=~INDICERIQUEZA, design =.x, FUN=svytotal, na.rm = T) %>% 
                   
-                  mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA") %>% 
+                  mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA",
+                         orden =as.numeric(as.factor(INDICERIQUEZA))) %>% 
                   
                   select(-MOV_ROTA_e1) %>% 
                   
@@ -544,7 +546,7 @@ df3<-
                     mutate(
                       INDICERIQUEZA = substring(INDICERIQUEZA,14))) %>%
                 
-                select(INDICERIQUEZA,total,vacuna,vacunatipo,se,-`SE`))) %>% 
+                select(INDICERIQUEZA,orden,total,vacuna,vacunatipo,se,-`SE`))) %>% 
   
   
   mutate(
@@ -568,44 +570,26 @@ df3<-
 
 
 # SII y RII por año (2010 - 2020)
-sii_rii.t <-
-  df3 %>% select(ANIO,ssirii) %>% 
+
+df3 %>% select(ANIO,ssirii) %>% 
   unnest(cols = c(ssirii)) %>% 
   as.data.frame() %>% 
-  ungroup()
-
-# Grafico: tasa vs HR
-ggsave("yy.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
-
-
-# sii/rii por año: grafico
-
-sii_rii.t %>% 
+  ungroup() %>% 
   mutate(
     rii.pct = (rii-1)*100
   ) %>% 
   
-  pivot_longer(cols = c(rii.pct,ssi), names_to = "index") %>% 
+  pivot_longer(cols = c(rii,ssi), names_to = "index") %>% 
   
   ggplot() +
   geom_line(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
   geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
-  facet_wrap(~index)
+  facet_wrap(~index, scales = "free")
 
+ggsave("riq.png",width = 15)
 
-
-sii_rii.t %>% 
-  mutate(
-    rii.pct = (rii-1)*100
-  ) %>%
-  
-  ggplot() + 
-  
-  geom_point(aes(x = as.factor(ANIO), y = rii.pct, col = vacunatipo, group = vacunatipo)) + 
-  geom_line(aes(x = as.factor(ANIO), y = rii.pct, col = vacunatipo, group = vacunatipo)) +
-  
-  geom_point(aes(x = as.factor(ANIO), y = ssi, col = vacunatipo, group = vacunatipo))+
-  geom_line(aes(x = as.factor(ANIO), y = ssi, col = vacunatipo, group = vacunatipo))
+# Grafico: tasa vs HR
+ggsave("yy.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
 
 
 ```
@@ -724,19 +708,11 @@ df3<-
 
 
 # SII y RII por año (2010 - 2020)
-sii_rii.t <-
+
   df3 %>% select(ANIO,ssirii) %>% 
   unnest(cols = c(ssirii)) %>% 
   as.data.frame() %>% 
-  ungroup()
-
-# Grafico: tasa vs HR
-ggsave("uu.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
-
-
-# sii/rii por año: grafico
-
-sii_rii.t %>% 
+  ungroup() %>% 
   mutate(
     rii.pct = (rii-1)*100
   ) %>% 
@@ -748,20 +724,9 @@ sii_rii.t %>%
   geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
   facet_wrap(~index)
 
+# Grafico: tasa vs HR
+ggsave("uu.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
 
-
-sii_rii.t %>% 
-  mutate(
-    rii.pct = (rii-1)*100
-  ) %>%
-  
-  ggplot() + 
-  
-  # geom_point(aes(x = as.factor(ANIO), y = rii.pct, col = vacunatipo, group = vacunatipo)) + 
-  # geom_line(aes(x = as.factor(ANIO), y = rii.pct, col = vacunatipo, group = vacunatipo)) +
-  
-  geom_point(aes(x = as.factor(ANIO), y = ssi, col = vacunatipo, group = vacunatipo))+
-  geom_line(aes(x = as.factor(ANIO), y = ssi, col = vacunatipo, group = vacunatipo))
 
 ```
 
@@ -769,94 +734,99 @@ sii_rii.t %>%
 
 # EVENTO POR REGION
 
+
 ```{r}
 df3<-
   df2 %>% 
   mutate(
     
     ptv = map(.x =df,
-              .f = ~svyby(~MOV_PTV_e1, by=~EDAD_MADRE+DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
+              .f = ~svyby(~MOV_PTV_e1, by=~INDICERIQUEZA+DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
                 
-                mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV") %>% 
+                mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV",
+                       orden =as.numeric(as.factor(INDICERIQUEZA))) %>% 
                 
                 select(-MOV_PTV_e1) %>% 
                 
                 left_join(
                   
-                  svytotal(~EDAD_MADRE, design = .x, na.rm = T) %>%
+                  svytotal(~INDICERIQUEZA, design = .x, na.rm = T) %>%
                     
                     data.frame() %>%
                     
-                    rownames_to_column("EDAD_MADRE") %>%
+                    rownames_to_column("INDICERIQUEZA") %>%
                     
                     mutate(
-                      EDAD_MADRE = substring(EDAD_MADRE,11))) %>%
+                      INDICERIQUEZA = substring(INDICERIQUEZA,14))) %>%
                 
-                select(DEPARTAMEN,EDAD_MADRE,total,vacuna,vacunatipo,se,-`SE`)),
+                select(DEPARTAMEN,INDICERIQUEZA,total,vacuna,vacunatipo,se,-`SE`)),
     
     
     neumo = map(.x =df,
-               .f = ~svyby(~MOV_NEUMO_e1, by=~EDAD_MADRE+DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
+               .f = ~svyby(~MOV_NEUMO_e1, by=~INDICERIQUEZA+DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
                  
-                 mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO") %>% 
+                 mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO",
+                        orden =as.numeric(as.factor(INDICERIQUEZA))) %>% 
                  
                  select(-MOV_NEUMO_e1) %>% 
                  
                  left_join(
                    
-                   svytotal(~EDAD_MADRE, design = .x, na.rm = T) %>%
+                   svytotal(~INDICERIQUEZA, design = .x, na.rm = T) %>%
                      
                      data.frame() %>%
                      
-                     rownames_to_column("EDAD_MADRE") %>%
+                     rownames_to_column("INDICERIQUEZA") %>%
                      
                      mutate(
-                       EDAD_MADRE = substring(EDAD_MADRE,11))) %>%
+                       INDICERIQUEZA = substring(INDICERIQUEZA,14))) %>%
                  
-                 select(DEPARTAMEN,EDAD_MADRE,total,vacuna,vacunatipo,se,-`SE`)),
+                 select(DEPARTAMEN,INDICERIQUEZA,orden,total,vacuna,vacunatipo,se,-`SE`)),
     
     
     
     rota = map(.x =df,
-               .f = ~svyby(~MOV_ROTA_e1, by=~EDAD_MADRE+DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
+               .f = ~svyby(~MOV_ROTA_e1, by=~INDICERIQUEZA+DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
                  
-                 mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA") %>% 
+                 mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA",
+                        orden =as.numeric(as.factor(INDICERIQUEZA))) %>% 
                  
                  select(-MOV_ROTA_e1) %>% 
                  
                  left_join(
                    
-                   svytotal(~EDAD_MADRE, design = .x, na.rm = T) %>%
+                   svytotal(~INDICERIQUEZA, design = .x, na.rm = T) %>%
                      
                      data.frame() %>%
                      
-                     rownames_to_column("EDAD_MADRE") %>%
+                     rownames_to_column("INDICERIQUEZA") %>%
                      
                      mutate(
-                       EDAD_MADRE = substring(EDAD_MADRE,11))) %>%
+                       INDICERIQUEZA = substring(INDICERIQUEZA,14))) %>%
                  
-                 select(DEPARTAMEN,EDAD_MADRE,total,vacuna,vacunatipo,se,-`SE`)),
+                 select(DEPARTAMEN,INDICERIQUEZA,orden,total,vacuna,vacunatipo,se,-`SE`)),
     
     
     influ = map(.x =df,
-              .f = ~svyby(~MOV_INFLU_e1, by=~EDAD_MADRE+DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
+              .f = ~svyby(~MOV_INFLU_e1, by=~INDICERIQUEZA+DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
                 
-                mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU") %>% 
+                mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU",
+                       orden =as.numeric(as.factor(INDICERIQUEZA))) %>% 
                 
                 select(-MOV_INFLU_e1) %>% 
                 
                 left_join(
                   
-                  svytotal(~EDAD_MADRE, design = .x, na.rm = T) %>%
+                  svytotal(~INDICERIQUEZA, design = .x, na.rm = T) %>%
                     
                     data.frame() %>%
                     
-                    rownames_to_column("EDAD_MADRE") %>%
+                    rownames_to_column("INDICERIQUEZA") %>%
                     
                     mutate(
-                      EDAD_MADRE = substring(EDAD_MADRE,11))) %>%
+                      INDICERIQUEZA = substring(INDICERIQUEZA,14))) %>%
                 
-                select(DEPARTAMEN,EDAD_MADRE,total,vacuna,vacunatipo,se,-`SE`))
+                select(DEPARTAMEN,INDICERIQUEZA,total,orden,vacuna,vacunatipo,se,-`SE`))
     
   ) %>% 
   
@@ -875,4 +845,179 @@ df3<-
     
   )
 
+df4<-df3 %>% 
+  select(ANIO,ssirii) %>% 
+  unnest(cols = c(ssirii)) %>%
+  #filter(vacunatipo%in%c("INFLU")) %>% 
+  
+  left_join(region_shape, by = "DEPARTAMEN") %>% 
+  
+  group_by(vacunatipo) %>% 
+  
+  st_as_sf %>%
+  
+  nest() %>% 
+  
+  mutate(
+    
+    grafico = map(.x = data,
+                  .f = ~gg2(.x))
+  )
+  
+  
+
+ggsave("mapa.png",width = 15)
+
+df4$grafico[[1]]
+df4$grafico[[2]]
+df4$grafico[[3]]
+df4$grafico[[4]]
+
+cowplot::plot_grid(plotlist = df4$grafico, labels = c("influenza","neumococo","pentavalente","rotavirus"))
+ggsave("vacunaanio.png",width = 18,height = 10)
 ```
+
+
+```{r}
+df3<-
+  df2 %>% 
+  mutate(
+    
+    ptv = map(.x =df,
+              .f = ~svyby(~MOV_PTV_e1, by=~EDU_MADRE+DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
+                
+                mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV",
+                       orden =as.numeric(as.factor(EDU_MADRE))) %>% 
+                
+                select(-MOV_PTV_e1) %>% 
+                
+                left_join(
+                  
+                  svytotal(~EDU_MADRE, design = .x, na.rm = T) %>%
+                    
+                    data.frame() %>%
+                    
+                    rownames_to_column("EDU_MADRE") %>%
+                    
+                    mutate(
+                      EDU_MADRE = substring(EDU_MADRE,10))) %>%
+                
+                select(DEPARTAMEN,EDU_MADRE,total,vacuna,vacunatipo,se,-`SE`)),
+    
+    
+    neumo = map(.x =df,
+               .f = ~svyby(~MOV_NEUMO_e1, by=~EDU_MADRE+DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
+                 
+                 mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO",
+                        orden =as.numeric(as.factor(EDU_MADRE))) %>% 
+                 
+                 select(-MOV_NEUMO_e1) %>% 
+                 
+                 left_join(
+                   
+                   svytotal(~EDU_MADRE, design = .x, na.rm = T) %>%
+                     
+                     data.frame() %>%
+                     
+                     rownames_to_column("EDU_MADRE") %>%
+                     
+                     mutate(
+                       EDU_MADRE = substring(EDU_MADRE,10))) %>%
+                 
+                 select(DEPARTAMEN,EDU_MADRE,orden,total,vacuna,vacunatipo,se,-`SE`)),
+    
+    
+    
+    rota = map(.x =df,
+               .f = ~svyby(~MOV_ROTA_e1, by=~EDU_MADRE+DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
+                 
+                 mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA",
+                        orden =as.numeric(as.factor(EDU_MADRE))) %>% 
+                 
+                 select(-MOV_ROTA_e1) %>% 
+                 
+                 left_join(
+                   
+                   svytotal(~EDU_MADRE, design = .x, na.rm = T) %>%
+                     
+                     data.frame() %>%
+                     
+                     rownames_to_column("EDU_MADRE") %>%
+                     
+                     mutate(
+                       EDU_MADRE = substring(EDU_MADRE,10))) %>%
+                 
+                 select(DEPARTAMEN,EDU_MADRE,orden,total,vacuna,vacunatipo,se,-`SE`)),
+    
+    
+    influ = map(.x =df,
+              .f = ~svyby(~MOV_INFLU_e1, by=~EDU_MADRE+DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
+                
+                mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU",
+                       orden =as.numeric(as.factor(EDU_MADRE))) %>% 
+                
+                select(-MOV_INFLU_e1) %>% 
+                
+                left_join(
+                  
+                  svytotal(~EDU_MADRE, design = .x, na.rm = T) %>%
+                    
+                    data.frame() %>%
+                    
+                    rownames_to_column("EDU_MADRE") %>%
+                    
+                    mutate(
+                      INDICERIQUEZA = substring(EDU_MADRE,10))) %>%
+                
+                select(DEPARTAMEN,EDU_MADRE,total,orden,vacuna,vacunatipo,se,-`SE`))
+    
+  ) %>% 
+  
+  
+  mutate(
+    pretotal1  = map2(.x = ptv, .y = neumo, .f = ~bind_rows(.x,.y)),
+    pretotal2  = map2(.x = influ, .y = rota, .f = ~bind_rows(.x,.y)),
+    
+    total  = map2(.x = pretotal1, .y = pretotal2, .f = ~bind_rows(.x,.y)),
+    
+    hr = map(.x = total,
+             .f = ~h_prop.map(.x)),
+    
+    ssirii = map(.x = total,
+                 .f = ~sii_rii_map(.x))
+    
+  )
+
+
+df4<-df3 %>% 
+  select(ANIO,ssirii) %>% 
+  unnest(cols = c(ssirii)) %>%
+  #filter(vacunatipo%in%c("INFLU")) %>% 
+  
+  left_join(region_shape, by = "DEPARTAMEN") %>% 
+  
+  group_by(vacunatipo) %>% 
+  
+  st_as_sf %>%
+  
+  nest() %>% 
+  
+  mutate(
+    
+    grafico = map(.x = data,
+                  .f = ~gg2(.x))
+  )
+  
+  
+
+ggsave("mapa.png",width = 15)
+
+df4$grafico[[1]]
+df4$grafico[[2]]
+df4$grafico[[3]]
+df4$grafico[[4]]
+
+cowplot::plot_grid(plotlist = df4$grafico, labels = c("influenza","neumococo","pentavalente","rotavirus"))
+ggsave("vacunaanio2.png",width = 18,height = 10)
+```
+

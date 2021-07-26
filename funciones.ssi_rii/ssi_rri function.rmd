@@ -18,7 +18,7 @@ h_prop<-
     ) %>% 
    
     # ordenar de - a +
-   arrange(tasa,.by_group = T) %>% 
+   arrange(orden,.by_group = T) %>% 
    
      # Calculo de hr
    mutate(pop= vacuna/sum(vacuna),
@@ -51,7 +51,7 @@ sii_rii<-function(data) {
     ) %>% 
    
     # ordenar de - a +
-   arrange(tasa,.by_group = T) %>% 
+   #arrange(orden,.by_group = T) %>% 
    
      # Calculo de hr
    mutate(pop= vacuna/sum(vacuna),
@@ -120,7 +120,7 @@ h_prop.map <-
       ) %>% 
    
     # ordenar de - a +
-   arrange(tasa,.by_group = T) %>% 
+   arrange(orden,.by_group = T) %>% 
    
      # Calculo de hr
    mutate(pop= vacuna/sum(vacuna),
@@ -159,7 +159,7 @@ sii_rii_map<-function(data) {
       ) %>% 
    
     # ordenar de - a +
-   arrange(tasa,.by_group = T) %>% 
+   arrange(orden,.by_group = T) %>% 
    
      # Calculo de hr
    mutate(pop= vacuna/sum(vacuna),
@@ -224,3 +224,16 @@ gg<-function(df2){ ggplot(data = df2 , aes(x =hr2 , y = tasa)) +
    
 }
 ```
+
+
+```{r}
+gg2<- function(data){ 
+   
+   ggplot(data = data) + 
+  geom_sf(aes(fill=sii)) +
+  viridis::scale_fill_viridis(option = "B", limits = c(-18,18))+
+  facet_wrap(~ANIO, ncol = 6) 
+   
+}
+```
+
