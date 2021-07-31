@@ -45,7 +45,10 @@ df3<-
               .f = ~svyby(~MOV_PTV_e1, by=~EDU_MADRE, design =.x, FUN=svytotal, na.rm = T) %>% 
                 
                 mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV",
-                       orden =as.numeric(as.factor(EDU_MADRE))) %>% 
+                       orden = case_when(EDU_MADRE == "sin educ" ~ 0,
+                                         EDU_MADRE == "primaria" ~ 1,
+                                         EDU_MADRE == "secundaria" ~ 2,
+                                         EDU_MADRE == "superior" ~ 3)) %>% 
                 
                 select(-MOV_PTV_e1) %>% 
                 
@@ -68,7 +71,10 @@ df3<-
                 .f = ~svyby(~MOV_NEUMO_e1, by=~EDU_MADRE, design =.x, FUN=svytotal, na.rm = T) %>% 
                   
                   mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO",
-                         orden =as.numeric(as.factor(EDU_MADRE))) %>% 
+                         orden = case_when(EDU_MADRE == "sin educ" ~ 0,
+                                         EDU_MADRE == "primaria" ~ 1,
+                                         EDU_MADRE == "secundaria" ~ 2,
+                                         EDU_MADRE == "superior" ~ 3)) %>% 
                   
                   select(-MOV_NEUMO_e1) %>% 
                   
@@ -90,7 +96,10 @@ df3<-
                 .f = ~svyby(~MOV_INFLU_e1, by=~EDU_MADRE, design =.x, FUN=svytotal, na.rm = T) %>% 
                   
                   mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU",
-                         orden =as.numeric(as.factor(EDU_MADRE))) %>% 
+                         orden = case_when(EDU_MADRE == "sin educ" ~ 0,
+                                         EDU_MADRE == "primaria" ~ 1,
+                                         EDU_MADRE == "secundaria" ~ 2,
+                                         EDU_MADRE == "superior" ~ 3)) %>% 
                   
                   select(-MOV_INFLU_e1) %>% 
                   
@@ -112,7 +121,10 @@ df3<-
                 .f = ~svyby(~MOV_ROTA_e1, by=~EDU_MADRE, design =.x, FUN=svytotal, na.rm = T) %>% 
                   
                   mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA",
-                         orden =as.numeric(as.factor(EDU_MADRE))) %>% 
+                         orden = case_when(EDU_MADRE == "sin educ" ~ 0,
+                                         EDU_MADRE == "primaria" ~ 1,
+                                         EDU_MADRE == "secundaria" ~ 2,
+                                         EDU_MADRE == "superior" ~ 3)) %>% 
                   
                   select(-MOV_ROTA_e1) %>% 
                   
@@ -156,30 +168,39 @@ df3<-
   unnest(cols = c(ssirii)) %>% 
   as.data.frame() %>% 
   ungroup() %>% 
+    
   
   pivot_longer(cols = c(rii,ssi), names_to = "index") %>% 
   
   ggplot() +
   geom_line(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
   geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
-  facet_wrap(~index, scales = "free")
+    
+  scale_color_manual(values = c("#346751","#C84B31","#FFCC29","blue4")) +
+  facet_wrap(~index, scales = "free", labeller = labeller(index = c("rii" = "RII",
+                                                                    "ssi" = "SII"))) +
+    xlab("Years")+
+    ylab("Value")+
+    #theme_minimal()+
+    theme(
+    axis.title = element_text(face ="bold", size = 11),
+    legend.text = element_text(size = 8, face = "bold"),
+    axis.text = element_text(face = "bold"),
+    axis.text.x = element_text( size = 11),
+    legend.position = "top",
+    legend.title = element_blank(),
+    axis.line = element_line(colour = "black", size = 1),
+    panel.background = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(face = "bold")
+  )
   
-  ggsave("educ.png",width = 15)
+  ggsave("SII_RII_education.png",width = 18, height = 5)
 
 # Grafico: tasa vs HR
 ggsave("rr.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
 
 #########
-
-df3 %>%
-  select(ANIO,hr) %>%
-  unnest(cols = c(hr)) %>%
-  as.data.frame() %>%
-  filter(EDU_MADRE%in%c("primaria","secundaria")) %>%
-
-  ggplot()+
-  geom_line(aes(x = as.factor(ANIO), y = tasa, col = EDU_MADRE, group=EDU_MADRE)) +
-  facet_wrap(~vacunatipo, scale = "free")
 
 
 temp<-df3 %>% 
@@ -189,17 +210,33 @@ temp<-df3 %>%
   group_by(as.factor(ANIO)) %>% 
   nest() %>% 
   mutate(grafico = map(.x = data,
-                       .f = ~ggplot(data = .x)+
-  geom_col(aes(x = EDU_MADRE, y = tasa, fill = as.factor(ANIO), group = as.factor(ANIO)))+
-  geom_point(aes(x = EDU_MADRE, y = tasa, fill = as.factor(ANIO), group = as.factor(ANIO)))+
-  geom_smooth(aes(x = EDU_MADRE, y = tasa, fill = as.factor(ANIO), group = as.factor(ANIO)), method = "lm",se = F)+
+                       .f = ~ggplot(data = .x, aes(x = EDU_MADRE, y = tasa, fill = as.factor(ANIO), group = as.factor(ANIO)))+
+  geom_col(fill = "#AA5674")+
+  geom_point()+
+  geom_smooth(method = "lm",se = F)+
+    xlab("Maternal education") +
+    ylab("Rate")+
+    scale_x_discrete(labels = c("NE","PS","HS","SE"))+
+    theme(
+    axis.title = element_text(face ="bold", size = 8),
+    legend.text = element_text(size = 9, face = "bold"),
+    axis.text = element_text(face = "bold"),
+    axis.text.x = element_text( size = 8),
+    legend.position = "top",
+    legend.title = element_blank(),
+    axis.line = element_line(colour = "black", size = 1),
+    panel.background = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(face = "bold", size = 8)) +
   facet_wrap(~vacunatipo, scales = "free")))
 
 
 cowplot::plot_grid(plotlist = temp$grafico)
 
-ggsave("temp2.png", width = 18, height = 8)
+ggsave("cols_slope_education.png", width = 13, height = 9)
 
+
+temp$data[[1]]
 
 ```
 
@@ -335,25 +372,28 @@ df3 %>% select(ANIO,ssirii) %>%
   ggplot() +
   geom_line(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
   geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
-  facet_wrap(~index, scales = "free")
+  scale_color_manual(values = c("#346751","#C84B31","#FFCC29","blue4")) +
+  facet_wrap(~index, scales = "free", labeller = labeller(index = c("rii" = "RII",
+                                                                    "ssi" = "SII"))) +
+    xlab("Years")+
+    ylab("Value")+
+    #theme_minimal()+
+    theme(
+    axis.title = element_text(face ="bold", size = 11),
+    legend.text = element_text(size = 8, face = "bold"),
+    axis.text = element_text(face = "bold"),
+    axis.text.x = element_text( size = 11),
+    legend.position = "top",
+    legend.title = element_blank(),
+    axis.line = element_line(colour = "black", size = 1),
+    panel.background = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(face = "bold")
+  )
 
-ggsave("riq.png",width = 15)
+ggsave("SII_RII_RIQ.png",width = 15)
 
-# Grafico: tasa vs HR
-ggsave("yy.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
-
-
-########
-df3 %>%
-  select(ANIO,hr) %>%
-  unnest(cols = c(hr)) %>%
-  as.data.frame() %>%
-  filter(INDICERIQUEZA%in%c("1ro","5to")) %>%
-
-  ggplot()+
-  geom_line(aes(x = as.factor(ANIO), y = tasa, col = INDICERIQUEZA, group=INDICERIQUEZA)) +
-  facet_wrap(~vacunatipo, scale = "free")
-
+#######
 
 temp<-df3 %>% 
   select(ANIO,hr) %>% 
@@ -362,16 +402,34 @@ temp<-df3 %>%
   group_by(as.factor(ANIO)) %>% 
   nest() %>% 
   mutate(grafico = map(.x = data,
-                       .f = ~ggplot(data = .x)+
-  geom_col(aes(x = INDICERIQUEZA, y = tasa, fill = as.factor(ANIO), group = as.factor(ANIO)))+
-  geom_point(aes(x = INDICERIQUEZA, y = tasa, fill = as.factor(ANIO), group = as.factor(ANIO)))+
-  geom_smooth(aes(x = INDICERIQUEZA, y = tasa, fill = as.factor(ANIO), group = as.factor(ANIO)), method = "lm",se = F)+
+                       .f = ~ggplot(data = .x, aes(x = INDICERIQUEZA, y = tasa, fill = as.factor(ANIO), group = as.factor(ANIO)))+
+  geom_col(fill = "#AA5674")+
+  geom_point()+
+  geom_smooth(method = "lm",se = F)+
+    xlab("Poverty decile") +
+    ylab("Rate")+
+    scale_x_discrete(labels = c("1st","2nd","3rd","4th","5th"))+
+    theme(
+    axis.title = element_text(face ="bold", size = 8),
+    legend.text = element_text(size = 9, face = "bold"),
+    axis.text = element_text(face = "bold"),
+    axis.text.x = element_text( size = 8),
+    legend.position = "top",
+    legend.title = element_blank(),
+    axis.line = element_line(colour = "black", size = 1),
+    panel.background = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(face = "bold", size = 8)) +
   facet_wrap(~vacunatipo, scales = "free")))
 
 
 cowplot::plot_grid(plotlist = temp$grafico)
 
-ggsave("temp.png", width = 18, height = 8)
+ggsave("cols_slope_RIQ.png", width = 13, height = 9)
+
+
+
+
 
 ```
 
@@ -512,17 +570,12 @@ df4<-df3 %>%
                   .f = ~gg2(.x))
   )
   
-  
 
-ggsave("mapa.png",width = 15)
 
-df4$grafico[[1]]
-df4$grafico[[2]]
-df4$grafico[[3]]
-df4$grafico[[4]]
+cowplot::plot_grid(plotlist = df4$grafico, labels = c("A","B","C","D"))
+ggsave("SII_RIQ_REGION.png",width = 19,height = 8)
 
-cowplot::plot_grid(plotlist = df4$grafico, labels = c("influenza","neumococo","pentavalente","rotavirus"))
-ggsave("vacunaanio.png",width = 18,height = 10)
+
 ```
 
 
@@ -657,8 +710,9 @@ df4<-df3 %>%
   )
   
 
-cowplot::plot_grid(plotlist = df4$grafico, labels = c("influenza","neumococo","pentavalente","rotavirus"))
-ggsave("vacunaanio2.png",width = 18,height = 10)
+cowplot::plot_grid(plotlist = df4$grafico, labels = c("A","B","C","D"))
+ggsave("SSI_EDUC_REGION.png",width = 18,height = 10)
+
 ```
 
 

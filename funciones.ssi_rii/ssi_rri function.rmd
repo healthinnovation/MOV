@@ -229,9 +229,18 @@ gg<-function(df2){ ggplot(data = df2 , aes(x =hr2 , y = tasa)) +
 ```{r}
 gg2<- function(data){ 
    
-   ggplot(data = data) + 
-  geom_sf(aes(fill=sii)) +
-  viridis::scale_fill_viridis(option = "B", limits = c(-18,18))+
+   ggplot(data = data, aes(fill=-sii)) + 
+  geom_sf() +
+  scale_fill_gradient2(mid="#FBFEF9",low="#0C6291",high="#A63446", limits=c(-19,19))+
+      
+      
+      theme(
+         axis.text.x = element_text(angle = 30, size = 6),
+         strip.background = element_blank(),
+         panel.background = element_blank(),
+         strip.text = element_text(face = "bold"))+
+      
+      #theme_minimal()+
   facet_wrap(~ANIO, ncol = 6) 
    
 }
