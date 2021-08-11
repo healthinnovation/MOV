@@ -179,7 +179,7 @@ df3<-
   
   ggplot() +
   geom_line(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo), size = 1.3) +
-  geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
+  #geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
    geom_hline(aes(yintercept = line), linetype = "dashed") + 
     
   scale_color_manual(values = c("#595260","#7ECA9C","#A98B98","#AD6C80")) +
@@ -202,9 +202,6 @@ df3<-
   )
   
   ggsave("SII_RII_education.png",width = 18, height = 5)
-
-# Grafico: tasa vs HR
-ggsave("rr.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
 
 #########
 
@@ -240,9 +237,6 @@ temp<-df3 %>%
 cowplot::plot_grid(plotlist = temp$grafico)
 
 ggsave("cols_slope_education.png", width = 13, height = 9)
-
-
-temp$data[[1]]
 
 ```
 
@@ -381,7 +375,7 @@ df3 %>% select(ANIO,ssirii) %>%
   
   ggplot() +
   geom_line(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo), size  = 1.3) +
-  geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
+  #geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
   geom_hline(aes(yintercept = line), linetype = "dashed") + 
     
   scale_color_manual(values = c("#595260","#7ECA9C","#A98B98","#AD6C80")) +
@@ -560,6 +554,7 @@ df3<-
     
   )
 
+################
 
 df3 %>% select(ANIO,ssirii) %>% 
   unnest(cols = c(ssirii)) %>% 
@@ -572,16 +567,81 @@ df3 %>% select(ANIO,ssirii) %>%
     line = ifelse(index=="rii",1,0)
   ) %>% 
   
-  filter(index != "rii") %>% 
+  filter(index == "rii") %>% 
   
    ggplot() +
-  geom_line(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo), size  = 1.3) +
+  geom_line(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo), size  = 1) +
   geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
   geom_hline(aes(yintercept = line), linetype = "dashed") +
   
+  scale_color_manual(values = c("#595260","#7ECA9C","#A98B98","#AD6C80")) +
+  facet_wrap(~index, scales = "free", labeller = labeller(index = c("rii" = "RII",
+                                                                    "ssi" = "SII"))) +
+    xlab("Years")+
+    ylab("Value")+
+    #theme_minimal()+
+    theme(
+    axis.title = element_text(face ="bold", size = 11),
+    legend.text = element_text(size = 8, face = "bold"),
+    axis.text = element_text(face = "bold", family = "Candara"),
+    axis.text.x = element_text( size = 9),
+    legend.position = "top",
+    legend.title = element_blank(),
+    axis.line = element_line(colour = "black", size = 1),
+    panel.background = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(face = "bold")
+  ) + 
+  
   facet_wrap(~DEPARTAMEN, scales = "free")
 
-ggsave("test.png", width = 22, height = 10)
+ggsave("test.png", width = 25, height = 14)
+
+##################
+
+df3 %>% select(ANIO,ssirii) %>% 
+  unnest(cols = c(ssirii)) %>% 
+  as.data.frame() %>% 
+  ungroup() %>% 
+  
+  pivot_longer(cols = c(rii,sii), names_to = "index") %>% 
+  
+  mutate(
+    line = ifelse(index=="rii",1,0)
+  ) %>% 
+  
+  filter(index == "sii") %>% 
+  
+   ggplot() +
+  geom_line(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo), size  = 1) +
+  geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
+  geom_hline(aes(yintercept = line), linetype = "dashed") +
+  
+  scale_color_manual(values = c("#595260","#7ECA9C","#A98B98","#AD6C80")) +
+  facet_wrap(~index, scales = "free", labeller = labeller(index = c("rii" = "RII",
+                                                                    "ssi" = "SII"))) +
+    xlab("Years")+
+    ylab("Value")+
+    #theme_minimal()+
+    theme(
+    axis.title = element_text(face ="bold", size = 11),
+    legend.text = element_text(size = 8, face = "bold"),
+    axis.text = element_text(face = "bold", family = "Candara"),
+    axis.text.x = element_text( size = 9),
+    legend.position = "top",
+    legend.title = element_blank(),
+    axis.line = element_line(colour = "black", size = 1),
+    panel.background = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(face = "bold")
+  ) +
+  
+  facet_wrap(~DEPARTAMEN, scales = "free")
+
+ggsave("test.png", width = 22, height = 11)
+
+
+#####################
   
   
 
@@ -613,6 +673,7 @@ ggsave("SII_RIQ_REGION.png",width = 19,height = 8)
 
 
 ```
+
 
 
 ```{r}
