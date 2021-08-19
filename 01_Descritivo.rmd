@@ -836,6 +836,134 @@ ggsave("1raDosisTotal.png",width = 8, height = 6)
 
 ```
 
+## OPV EN LOS 11 ANIOS
+
+```{r}
+ptv1<-
+  df2 %>%
+  mutate(
+    
+    vacuna=map_dbl(.x = df,
+             .f =~svymean(~MOV_PTV_e1, design =.x, na.rm = T)),
+    
+    ptv1=map(.x = df,
+             .f =~svyciprop(~MOV_PTV_e1, design =.x, na.rm = T)),
+    
+     ptv1ci = map(.x = ptv1,
+                 .f = ~confint(.x) %>% 
+                   as.data.frame() %>%
+                   rownames_to_column("tar"))) %>% 
+  unnest(cols = c(ptv1ci)) %>% 
+  as.data.frame() %>% 
+  mutate(ci_l = `2.5%`,
+         ci_h = `97.5%`,
+         vacunatipo = "ptv1") %>% 
+  select(ANIO,ci_l,ci_h,vacunatipo,vacuna)
+  
+  
+influ1<-  
+  df2 %>%
+  mutate(
+    
+    vacuna=map_dbl(.x = df,
+             .f =~svymean(~MOV_INFLU_e1, design =.x, na.rm = T)),
+    
+    influ1=map(.x = df,
+             .f =~svyciprop(~MOV_INFLU_e1, design =.x, na.rm = T)),
+    
+     influci = map(.x = influ1,
+                 .f = ~confint(.x) %>% 
+                   as.data.frame() %>%
+                   rownames_to_column("tar"))) %>% 
+  unnest(cols = c(influci)) %>% 
+  as.data.frame() %>% 
+  mutate(ci_l = `2.5%`,
+         ci_h = `97.5%`,
+         vacunatipo = "influ1") %>% 
+  select(ANIO,ci_l,ci_h,vacunatipo,vacuna)
+  
+
+neumo1<-  
+  df2 %>%
+  mutate(
+    
+    vacuna=map_dbl(.x = df,
+             .f =~svymean(~MOV_NEUMO_e1, design =.x, na.rm = T)),
+    
+    nuemo1=map(.x = df,
+             .f =~svyciprop(~MOV_NEUMO_e1, design =.x, na.rm = T)),
+    
+     neumoci = map(.x = nuemo1,
+                 .f = ~confint(.x) %>% 
+                   as.data.frame() %>%
+                   rownames_to_column("tar"))) %>% 
+  unnest(cols = c(neumoci)) %>% 
+  as.data.frame() %>% 
+  mutate(ci_l = `2.5%`,
+         ci_h = `97.5%`,
+         vacunatipo = "neumo1") %>% 
+  select(ANIO,ci_l,ci_h,vacunatipo,vacuna)
+
+
+
+rota1<-  
+  df2 %>%
+  mutate(
+    
+    vacuna=map_dbl(.x = df,
+             .f =~svymean(~MOV_ROTA_e1, design =.x, na.rm = T)),
+    
+    rota1=map(.x = df,
+             .f =~svyciprop(~MOV_ROTA_e1, design =.x, na.rm = T)),
+    
+     rotaci = map(.x = rota1,
+                 .f = ~confint(.x) %>% 
+                   as.data.frame() %>%
+                   rownames_to_column("tar"))) %>% 
+  unnest(cols = c(rotaci)) %>% 
+  as.data.frame() %>% 
+  mutate(ci_l = `2.5%`,
+         ci_h = `97.5%`,
+         vacunatipo = "rota1") %>% 
+  select(ANIO,ci_l,ci_h,vacunatipo,vacuna)
+
+
+
+rbind(ptv1,neumo1,influ1,rota1) %>% 
+  #ungroup() %>% 
+  ggplot(aes(x = as.factor(ANIO), y = vacuna*100, 
+             ymin = ci_l*100, ymax = ci_h*100, 
+             fill= vacunatipo, col = vacunatipo, group = vacunatipo))+
+  
+  geom_smooth(alpha = 0.3, size = 1.2) +
+  scale_fill_manual(values = c("#595260","#7ECA9C","#A98B98","#AD6C80"),
+                     labels = c("INFLU1","NM1","PTV1","ROTA1")) +
+  
+  scale_color_manual(values = c("#595260","#7ECA9C","#A98B98","#AD6C80"),
+                     labels = c("INFLU1","NM1","PTV1","ROTA1")) +
+  
+  xlab("Years") +
+  scale_x_discrete(expand = c(0, 0.15))+
+  ylab("Prop. %")+
+  
+  #geom_hline(aes(yintercept = 85), linetype = "dashed") + 
+  
+  theme(
+    axis.title = element_text(face ="bold", size = 11),
+    legend.text = element_text(size = 8, face = "bold"),
+    axis.text = element_text(face = "bold", family = "Arial"),
+    axis.text.x = element_text( size = 9),
+    legend.position = "top",
+    legend.title = element_blank(),
+    axis.line = element_line(colour = "black", size = 1),
+    panel.background = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(face = "bold")
+  ) 
+
+
+ggsave("opv11anios.png",width = 8, height = 6)  
+```
 
 # REGION / DOSIS
 
