@@ -25,6 +25,7 @@ HOGAR1 <- read.csv("ENDES/2020/RECH0.csv", sep = ";" )
 HOGAR_MADRE <- read.csv("ENDES/2020/RECH1.csv", sep = ";" )
 VIVIENDA1 <- read.csv("ENDES/2020/RECH23.csv", sep = ";" )
 MUJER2<- read.csv("ENDES/2020/REC0111.csv", sep = ";" )
+MUJER3<- haven::read_sav()
 NINIO_ANEMIA<- read.csv("ENDES/2020/RECH6.csv", sep = ";" )
 region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 
