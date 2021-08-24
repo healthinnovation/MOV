@@ -3,6 +3,136 @@ title: "ssi_rri function"
 output: html_document
 ---
 
+# Preparacion de datos
+
+```{r}
+prep.data <-function(MOV2020){ MOV2020 %>%
+  
+  select(CASEID,
+         # H1,H2,H3,H4,H5,H6,H7,H8,H9,H10,
+         # S45D4,S45D5,S45P4,S45P5,S45B0,S45B1,
+         # S45B2,S45B3,S45TT,S45SP1,S45SP2,S45SR,
+         S45F1,S45F2,S45F3,
+         S45PV1,S45PV2,S45PV3,
+         S45NM1,S45NM2,S45NM3,
+         S45RT1,S45RT2,
+         S45IF1,S45IF2,
+         
+         S466,S466B,V001,V005,V012,V022,V023,
+         V024,V025,V102,V106,V131,
+         V481:V481X,V190,V022,ANIO,JUNTOS,V130) %>% 
+  
+  
+  
+  
+        # cATEGORIAS DE RESPUESTA A LA VACUNACION
+  mutate(
+    
+        # across(S45F1:S45IF2,~ifelse(.x == 0|.x == 8,0, # 0: No, 8: No sabe
+        #                          ifelse(.x == 1|.x == 3,1,2))),# 1: Tarjeta fecha, # 3: Marca tarjeta
+        
+        
+        across(S45F1:S45IF2,~ifelse(.x == 0|.x == 8,0,1)),# 1: Tarjeta fecha, # 3: Marca tarjeta
+
+    
+    
+         
+         CRED = as.factor(ifelse(S466==0 | S466 == 8,"No","Si")),
+        
+        
+         
+         S466B = ifelse(is.na(S466B),99,S466B),
+         CREDLUGAR = factor(S466B, levels = c(21,22,23,24,
+                                              25,26,27,31,
+                                              32,41,42,96,99), labels = c("H.MINSA/FFAA","H.ESSALUD","H.MINSA/FFAA",
+                                                                 "CS/POSTA MINSA","CS/POSTA MINSA","CS.ESSALUD",
+                                                                 "OTRO/PRIVADO","OTRO/PRIVADO","OTRO/PRIVADO","OTRO/PRIVADO",
+                                                                 "OTRO/PRIVADO","OTRO/PRIVADO","NoCRED")),
+         
+        
+         
+         
+         TIPORESIDENCIA = ifelse(V102==1,"URBANO","RURAL"),
+         
+         
+         
+         
+         
+         DEPARTAMEN = factor(V024, levels = c(1:25), labels = c("AMAZONAS","ANCASH","APURIMAC","AREQUIPA","AYACUCHO",
+                                                            "CAJAMARCA","CALLAO","CUSCO","HUANCAVELICA","HUANUCO",
+                                                            "ICA","JUNIN","LA LIBERTAD","LAMBAYEQUE","LIMA",
+                                                            "LORETO","MADRE DE DIOS","MOQUEGUA","PASCO","PIURA",
+                                                            "PUNO","SAN MARTIN","TACNA","TUMBES","UCAYALI")),
+         
+         
+         
+         EDU_MADRE = as.factor(factor(V106, levels = c(0,1,2,3), labels = c("sin educ","primaria","secundaria","superior"))),
+         
+         
+         ETNIA_MADRE = factor(V131, levels = c(1:12), labels = c("quechua","aimara","ashaninka","awajun",
+                                                                 "shipibo","shawi","matsigenka","achuar",
+                                                                 "Otro","castellano","portugues","Otro extranjero")),
+        
+        
+        #REGIONNATURAL = factor(SREGION, levels = c(1,2,3,4), labels = c("limaMetro","Costa","Sierra","Selva")),
+        
+        #JUNTOS = factor(JUNTOS, levels =c(0,1), labels = c("No","Si")),
+         
+         
+         
+         #EDAD_ANIOS = round((QI478/12),0),
+         
+         SEGURO = factor(V481, levels = c(0,1), labels = c("No","Si")),
+         
+         EDAD_MADRE = ifelse(V012<18,"< 18 a",
+                             ifelse(V012>=18&V012<30,"18-30 a",
+                                    ifelse(V012>=30&V012<40,"30 a 40",
+                                           ifelse(V012>=40,"40 a mas",NA)))),
+         
+         INDICERIQUEZA = factor(V190, levels = c(1:5), labels = c("1ro","2do","3ro","4to","5to")),
+    
+    
+        V005 = V005/1000000) %>% 
+  
+  
+  fastDummies::dummy_cols(select_columns = c("S45F1","S45F2","S45F3", # Hib
+                                             "S45PV1","S45PV2","S45PV3", #Pentavalente
+                                             "S45NM1","S45NM2","S45NM3", #Neumococo
+                                             "S45IF1","S45IF2", #Influenza
+                                             "S45RT1","S45RT2" # Rotavirus
+                                             
+                                             )) %>% 
+  
+   # CON CRED O SEGURO
+   filter((CRED == "Si" | SEGURO == "Si")) %>% 
+  
+  
+  
+  mutate( HIB_COMPLETA = as.factor(ifelse(S45F1 !=0 & S45F2 != 0 & S45F3 != 0,1,0)), # VACUNAS COMPLETAS
+          PTV_COMPLETA = as.factor(ifelse(S45PV1 !=0 & S45PV2 != 0 & S45PV3 != 0,1,0)),
+          NEUMO_COMPLETA = as.factor(ifelse(S45NM1 !=0 & S45NM2 != 0 & S45NM3 != 0,1,0)),
+          INFLU_COMPLETA = as.factor(ifelse(S45IF1 !=0 & S45IF2 != 0,1,0)),
+          ROTA_COMPLETA = as.factor(ifelse(S45RT1 !=0 & S45RT2 != 0,1,0)),
+        
+           ####
+          ## Pentavalente
+          MOV_PTV_e1 = ifelse(S45PV1==0,1,0),
+          
+          
+          ## Neumococo 
+          MOV_NEUMO_e1 = ifelse(S45NM1==0,1,0),
+          
+          
+          ## Rotavirus (entre 2 y 4 meses, maximo 7 meses la 2da dosis)
+          MOV_ROTA_e1 = ifelse(S45RT1 == 0,1,0),
+          
+          ## INFLUENZA (<12 m : 2 dosis, 12-35 meses:1 dosis, >36 meses: 1 dosis adulto)
+          
+          MOV_INFLU_e1 = ifelse(S45IF1 == 0,1,0))
+          
+}
+```
+
 #1. SII_RII
 
 ```{r}
