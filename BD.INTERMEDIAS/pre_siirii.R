@@ -3,104 +3,92 @@ df3<-
   mutate(
     
     ptv = map(.x =df,
-              .f = ~svyby(~MOV_PTV_e1, by=~EDU_MADRE+CRED, design =.x, FUN=svytotal, na.rm = T) %>% 
+              .f = ~svyby(~MOV_PTV_e1, by=~INDICERIQUEZA + CRED, design =.x, FUN=svytotal, na.rm = T) %>% 
                 
                 mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV",
-                       orden = case_when(EDU_MADRE == "sin educ" ~ 0,
-                                         EDU_MADRE == "primaria" ~ 1,
-                                         EDU_MADRE == "secundaria" ~ 2,
-                                         EDU_MADRE == "superior" ~ 3)) %>% 
+                       orden =as.numeric(as.factor(INDICERIQUEZA))) %>% 
                 
                 select(-MOV_PTV_e1) %>% 
                 
                 left_join(
                   
-                  svytotal(~EDU_MADRE, design = .x, na.rm = T) %>%
+                  svytotal(~INDICERIQUEZA, design = .x, na.rm = T) %>%
                     
                     data.frame() %>%
                     
-                    rownames_to_column("EDU_MADRE") %>%
+                    rownames_to_column("INDICERIQUEZA") %>%
                     
                     mutate(
-                      EDU_MADRE = substring(EDU_MADRE,10))) %>%
+                      INDICERIQUEZA = substring(INDICERIQUEZA,14))) %>%
                 
-                select(CRED,EDU_MADRE,orden,total,vacuna,vacunatipo,se,-`SE`)),
+                select(INDICERIQUEZA,CRED,orden,total,vacuna,vacunatipo,se,-`SE`)),
     
     
     
     neumo = map(.x =df,
-                .f = ~svyby(~MOV_NEUMO_e1, by=~EDU_MADRE+CRED, design =.x, FUN=svytotal, na.rm = T) %>% 
+                .f = ~svyby(~MOV_NEUMO_e1, by=~INDICERIQUEZA + CRED, design =.x, FUN=svytotal, na.rm = T) %>% 
                   
                   mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO",
-                         orden = case_when(EDU_MADRE == "sin educ" ~ 0,
-                                           EDU_MADRE == "primaria" ~ 1,
-                                           EDU_MADRE == "secundaria" ~ 2,
-                                           EDU_MADRE == "superior" ~ 3)) %>% 
+                         orden =as.numeric(as.factor(INDICERIQUEZA))) %>% 
                   
                   select(-MOV_NEUMO_e1) %>% 
                   
                   left_join(
                     
-                    svytotal(~EDU_MADRE, design = .x, na.rm = T) %>%
+                    svytotal(~INDICERIQUEZA, design = .x, na.rm = T) %>%
                       
                       data.frame() %>%
                       
-                      rownames_to_column("EDU_MADRE") %>%
+                      rownames_to_column("INDICERIQUEZA") %>%
                       
                       mutate(
-                        EDU_MADRE = substring(EDU_MADRE,10))) %>%
+                        INDICERIQUEZA = substring(INDICERIQUEZA,14))) %>%
                   
-                  select(CRED,EDU_MADRE,orden,total,vacuna,vacunatipo,se,-`SE`)),
+                  select(INDICERIQUEZA,CRED,orden,total,vacuna,vacunatipo,se,-`SE`)),
     
     
     influ = map(.x =df,
-                .f = ~svyby(~MOV_INFLU_e1, by=~EDU_MADRE+CRED, design =.x, FUN=svytotal, na.rm = T) %>% 
+                .f = ~svyby(~MOV_INFLU_e1, by=~INDICERIQUEZA + CRED, design =.x, FUN=svytotal, na.rm = T) %>% 
                   
                   mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU",
-                         orden = case_when(EDU_MADRE == "sin educ" ~ 0,
-                                           EDU_MADRE == "primaria" ~ 1,
-                                           EDU_MADRE == "secundaria" ~ 2,
-                                           EDU_MADRE == "superior" ~ 3)) %>% 
+                         orden =as.numeric(as.factor(INDICERIQUEZA))) %>% 
                   
                   select(-MOV_INFLU_e1) %>% 
                   
                   left_join(
                     
-                    svytotal(~EDU_MADRE, design = .x, na.rm = T) %>%
+                    svytotal(~INDICERIQUEZA, design = .x, na.rm = T) %>%
                       
                       data.frame() %>%
                       
-                      rownames_to_column("EDU_MADRE") %>%
+                      rownames_to_column("INDICERIQUEZA") %>%
                       
                       mutate(
-                        EDU_MADRE = substring(EDU_MADRE,10))) %>%
+                        INDICERIQUEZA = substring(INDICERIQUEZA,14))) %>%
                   
-                  select(CRED,EDU_MADRE,orden,total,vacuna,vacunatipo,se,-`SE`)),
+                  select(INDICERIQUEZA,CRED,orden,total,vacuna,vacunatipo,se,-`SE`)),
     
     
     rota  = map(.x =df,
-                .f = ~svyby(~MOV_ROTA_e1, by=~EDU_MADRE+CRED, design =.x, FUN=svytotal, na.rm = T) %>% 
+                .f = ~svyby(~MOV_ROTA_e1, by=~INDICERIQUEZA + CRED, design =.x, FUN=svytotal, na.rm = T) %>% 
                   
                   mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA",
-                         orden = case_when(EDU_MADRE == "sin educ" ~ 0,
-                                           EDU_MADRE == "primaria" ~ 1,
-                                           EDU_MADRE == "secundaria" ~ 2,
-                                           EDU_MADRE == "superior" ~ 3)) %>% 
+                         orden =as.numeric(as.factor(INDICERIQUEZA))) %>% 
                   
                   select(-MOV_ROTA_e1) %>% 
                   
                   left_join(
                     
-                    svytotal(~EDU_MADRE, design =.x, na.rm = T) %>%
+                    svytotal(~INDICERIQUEZA, design = .x, na.rm = T) %>%
                       
                       data.frame() %>%
                       
-                      rownames_to_column("EDU_MADRE") %>%
+                      rownames_to_column("INDICERIQUEZA") %>%
                       
                       mutate(
-                        EDU_MADRE = substring(EDU_MADRE,10))) %>%
+                        INDICERIQUEZA = substring(INDICERIQUEZA,14))) %>%
                   
-                  select(CRED,EDU_MADRE,orden,total,vacuna,vacunatipo,se,-`SE`))) %>% 
+                  select(INDICERIQUEZA,CRED,orden,total,vacuna,vacunatipo,se,-`SE`))) %>% 
   
   
   mutate(
@@ -168,19 +156,19 @@ df3 %>% select(ANIO,ssirii_no) %>%
 
 
 temp<-df3 %>% 
-  select(ANIO,hr_no) %>% 
-  unnest(cols = c(hr_no)) %>% 
+  select(ANIO,hr_si) %>% 
+  unnest(cols = c(hr_si)) %>% 
   as.data.frame() %>% 
   group_by(as.factor(ANIO)) %>% 
   nest() %>% 
   mutate(grafico = map(.x = data,
-                       .f = ~ggplot(data = .x, aes(x = EDU_MADRE, y = tasa, fill = as.factor(ANIO), group = as.factor(ANIO)))+
+                       .f = ~ggplot(data = .x, aes(x = INDICERIQUEZA, y = tasa, fill = as.factor(ANIO), group = as.factor(ANIO)))+
                          geom_col(fill = "#AA5674")+
                          geom_point()+
                          geom_smooth(method = "lm",se = F)+
-                         xlab("Maternal education") +
+                         xlab("Poverty quintile") +
                          ylab("Rate")+
-                         scale_x_discrete(labels = c("NE","PS","HS","SE"))+
+                         scale_x_discrete(labels = c("1st","2nd","3rd","4th","5th"))+
                          theme(
                            axis.title = element_text(face ="bold", size = 8),
                            legend.text = element_text(size = 9, face = "bold"),

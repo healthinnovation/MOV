@@ -463,6 +463,7 @@ ggplot(data = df3, aes(x = vacunatipo, y = vacuna, fill = INDICERIQUEZA)) +
         strip.text = element_text(size = 9))
 
 
+
 ```
 
 
