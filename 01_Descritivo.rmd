@@ -49,14 +49,7 @@ df2<-MOV_GENERAL %>%
     df= map(.x = data,
             .f = ~svydesign(id =~ V001, strata =~ V022, probs=~V005, data=.x))) 
 
-
-#BD en survey
-# df <- svydesign(id =~ V001, strata =~ V022, probs=~V005, data=MOV2020_2) 
-
-
 options(survey.lonely.psu="remove")
-# options(survey.adjust.domain.lonely=TRUE)
-# options(survey.lonely.psu="adjust")
 
 ```
 
@@ -140,6 +133,23 @@ ggplot(data = df3, aes(x = vacunatipo, y = vacuna, fill = CRED)) +
 ```
 
 # PROPORCION POR LUGAR DONDE TIENE CRED
+
+```{r}
+df3<-df2 %>% 
+  mutate(
+    tiporesidencia = map(.x = df,
+                         .f = ~svymean(~TIPORESIDENCIA, design = .x, na.rm = T, vartype = c("se","ci")) %>%
+                           confint() %>%
+      as.data.frame() %>% 
+         
+      rownames_to_column(var = "variable"))
+  ) %>% 
+  unnest(cols = c(tiporesidencia))
+
+
+
+```
+
 
 ```{r, echo=F, warning=F, message=F, error=F, fig.height= 8, fig.width= 13}
 df3<-df2 %>%
