@@ -41,7 +41,19 @@ rm(list=ls())
 # Base de trabajo
 MOV_GENERAL <- read.csv("./BD.INTERMEDIAS/mov_general.csv")
 
-df2<-MOV_GENERAL %>% 
+df2<-MOV_GENERAL %>%
+  
+  mutate(
+    tiposeguro = ifelse(CREDLUGAR == "H.MINSA/FFAA"|
+                        CREDLUGAR == "H.ESSALUD"|
+                        CREDLUGAR == "CS/POSTA MINSA"|
+                        CREDLUGAR == "CS.ESSALUD", "Estado",
+                        ifelse(CREDLUGAR == "OTRO/PRIVADO","Privado",NA)),
+    
+    
+    CREDLUGAR2 = ifelse(CREDLUGAR == "H.MINSA/FFAA"|CREDLUGAR == "H.ESSALUD","Hospital",
+                        ifelse(CREDLUGAR == "CS/POSTA MINSA"|CREDLUGAR == "CS.ESSALUD","CentroSalud",CREDLUGAR))
+  ) %>% 
   
   group_by(ANIO) %>% 
   nest() %>%
@@ -51,6 +63,185 @@ df2<-MOV_GENERAL %>%
 
 options(survey.lonely.psu="remove")
 
+```
+
+# DESCRIPCION DE VARIABLES
+
+```{r}
+df3<-df2 %>% 
+  mutate(
+    tresidencia_m = map(.x = df,
+                         .f = ~svymean(~as.factor(TIPORESIDENCIA), design = .x, na.rm = T, vartype = c("se","ci")) %>% 
+                           as.vector() %>% 
+                           as.data.frame() %>% 
+                           mutate("prop" = as.numeric(.)) %>% 
+                           select(-.)),
+    
+    tresidencia_ci = map(.x = df,
+                         .f = ~svymean(~as.factor(TIPORESIDENCIA), design = .x, na.rm = T, vartype = c("se","ci")) %>% 
+                           confint() %>% 
+                           as.data.frame() %>% 
+                           rownames_to_column(var = "var")),
+    
+    housingtype = map2(.x = tresidencia_m,
+                       .y = tresidencia_ci,
+                       .f = ~bind_cols(.x,.y)),
+    
+    
+    
+    
+    cred_m = map(.x = df,
+                         .f = ~svymean(~as.factor(CREDLUGAR2), design = .x, na.rm = T, vartype = c("se","ci")) %>% 
+                           as.vector() %>% 
+                           as.data.frame() %>% 
+                           mutate("prop" = as.numeric(.)) %>% 
+                           select(-.)),
+    
+    cred_ci = map(.x = df,
+                         .f = ~svymean(~as.factor(CREDLUGAR2), design = .x, na.rm = T, vartype = c("se","ci")) %>% 
+                           confint() %>% 
+                           as.data.frame() %>% 
+                           rownames_to_column(var = "var")),
+    
+    credloc = map2(.x = cred_m,
+                       .y = cred_ci,
+                       .f = ~bind_cols(.x,.y)),
+    
+    
+    
+    credtipo_m = map(.x = df,
+                         .f = ~svymean(~as.factor(tiposeguro), design = .x, na.rm = T, vartype = c("se","ci")) %>% 
+                           as.vector() %>% 
+                           as.data.frame() %>% 
+                           mutate("prop" = as.numeric(.)) %>% 
+                           select(-.)),
+    
+    credtipo_ci = map(.x = df,
+                         .f = ~svymean(~as.factor(tiposeguro), design = .x, na.rm = T, vartype = c("se","ci")) %>% 
+                           confint() %>% 
+                           as.data.frame() %>% 
+                           rownames_to_column(var = "var")),
+    
+    credtype = map2(.x = credtipo_m,
+                       .y = credtipo_ci,
+                       .f = ~bind_cols(.x,.y)),
+    
+    
+    
+    
+    edu_m = map(.x = df,
+                         .f = ~svymean(~as.factor(EDU_MADRE), design = .x, na.rm = T, vartype = c("se","ci")) %>% 
+                           as.vector() %>% 
+                           as.data.frame() %>% 
+                           mutate("prop" = as.numeric(.)) %>% 
+                           select(-.)),
+    
+    edu_ci = map(.x = df,
+                         .f = ~svymean(~as.factor(EDU_MADRE), design = .x, na.rm = T, vartype = c("se","ci")) %>% 
+                           confint() %>% 
+                           as.data.frame() %>% 
+                           rownames_to_column(var = "var")),
+    
+    edumadre = map2(.x = edu_m,
+                    .y = edu_ci,
+                    .f = ~bind_cols(.x,.y)),
+    
+    
+    
+    etnia_m = map(.x = df,
+                         .f = ~svymean(~as.factor(ETNIA_MADRE), design = .x, na.rm = T, vartype = c("se","ci")) %>% 
+                           as.vector() %>% 
+                           as.data.frame() %>% 
+                           mutate("prop" = as.numeric(.)) %>% 
+                           select(-.)),
+    
+    etnia_ci = map(.x = df,
+                         .f = ~svymean(~as.factor(ETNIA_MADRE), design = .x, na.rm = T, vartype = c("se","ci")) %>% 
+                           confint() %>% 
+                           as.data.frame() %>% 
+                           rownames_to_column(var = "var")),
+    
+    etnia = map2(.x = etnia_m,
+                 .y = etnia_ci,
+                 .f = ~bind_cols(.x,.y)),
+    
+    
+    
+    
+    income_m = map(.x = df,
+                         .f = ~svymean(~as.factor(INDICERIQUEZA), design = .x, na.rm = T, vartype = c("se","ci")) %>% 
+                           as.vector() %>% 
+                           as.data.frame() %>% 
+                           mutate("prop" = as.numeric(.)) %>% 
+                           select(-.)),
+    
+    income_ci = map(.x = df,
+                         .f = ~svymean(~as.factor(INDICERIQUEZA), design = .x, na.rm = T, vartype = c("se","ci")) %>% 
+                           confint() %>% 
+                           as.data.frame() %>% 
+                           rownames_to_column(var = "var")),
+    
+    income = map2(.x = income_m,
+                 .y = income_ci,
+                 .f = ~bind_cols(.x,.y))
+
+  ) 
+
+
+```
+
+
+```{r}
+housing<-
+  df3 %>% 
+  select(ANIO,housingtype) %>% 
+  unnest(cols = c("housingtype")) %>% mutate(prop = round(prop*100),
+                                             `2.5 %`=round(`2.5 %`*100),
+                                             `97.5 %`=round(`97.5 %`*100),
+                                             variable = "housing")
+
+creloc<-
+  df3 %>% 
+  select(ANIO,credloc) %>% 
+  unnest(cols = c("credloc")) %>% mutate(prop = round(prop*100),
+                                             `2.5 %`=round(`2.5 %`*100),
+                                             `97.5 %`=round(`97.5 %`*100),
+                                         variable = "credloc")
+
+credtype<-
+  df3 %>% 
+  select(ANIO,credtype) %>% 
+  unnest(cols = c("credtype")) %>% mutate(prop = round(prop*100),
+                                             `2.5 %`=round(`2.5 %`*100),
+                                             `97.5 %`=round(`97.5 %`*100),
+                                          variable = "credtype")
+
+edumadre<-
+  df3 %>% 
+  select(ANIO,edumadre) %>% 
+  unnest(cols = c("edumadre")) %>% mutate(prop = round(prop*100),
+                                             `2.5 %`=round(`2.5 %`*100),
+                                             `97.5 %`=round(`97.5 %`*100),
+                                          variable = "edumadre")
+
+etnia<-
+  df3 %>% 
+  select(ANIO,etnia) %>% 
+  unnest(cols = c("etnia")) %>% mutate(prop = round(prop*100),
+                                             `2.5 %`=round(`2.5 %`*100),
+                                             `97.5 %`=round(`97.5 %`*100),
+                                       variable="etnia")
+
+income<-
+  df3 %>% 
+  select(ANIO,income) %>% 
+  unnest(cols = c("income")) %>% mutate(prop = round(prop*100),
+                                             `2.5 %`=round(`2.5 %`*100),
+                                             `97.5 %`=round(`97.5 %`*100),
+                                        variable = "income")
+
+
+descriptivo<-bind_rows(housing,credtype,creloc,edumadre,income,etnia)
 ```
 
 
@@ -134,47 +325,30 @@ ggplot(data = df3, aes(x = vacunatipo, y = vacuna, fill = CRED)) +
 
 # PROPORCION POR LUGAR DONDE TIENE CRED
 
-```{r}
-df3<-df2 %>% 
-  mutate(
-    tiporesidencia = map(.x = df,
-                         .f = ~svymean(~TIPORESIDENCIA, design = .x, na.rm = T, vartype = c("se","ci")) %>%
-                           confint() %>%
-      as.data.frame() %>% 
-         
-      rownames_to_column(var = "variable"))
-  ) %>% 
-  unnest(cols = c(tiporesidencia))
-
-
-
-```
-
-
 ```{r, echo=F, warning=F, message=F, error=F, fig.height= 8, fig.width= 13}
 df3<-df2 %>%
 
   mutate(
     ptv = map(.x = df ,
-                 .f = ~svyby(~MOV_PTV_e1, by=~CREDLUGAR, design =.x, FUN=svyciprop, vartype=c('se','ci')) %>%
+                 .f = ~svyby(~MOV_PTV_e1, by=~CREDLUGAR2, design =.x, FUN=svyciprop, vartype=c('se','ci')) %>%
 
                 mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTv") %>%
                 select(-`se.as.numeric(MOV_PTV_e1)`,-MOV_PTV_e1) %>% data.frame),
 
     neumo = map(.x = df ,
-                 .f = ~svyby(~MOV_NEUMO_e1, by=~CREDLUGAR, design =.x, FUN=svyciprop, vartype=c('se','ci')) %>%
+                 .f = ~svyby(~MOV_NEUMO_e1, by=~CREDLUGAR2, design =.x, FUN=svyciprop, vartype=c('se','ci')) %>%
 
                   mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO") %>%
                   select(-`se.as.numeric(MOV_NEUMO_e1)`,-MOV_NEUMO_e1) %>% data.frame),
 
     influ = map(.x = df ,
-                 .f = ~svyby(~MOV_INFLU_e1, by=~CREDLUGAR, design =.x, FUN=svyciprop, vartype=c('se','ci')) %>%
+                 .f = ~svyby(~MOV_INFLU_e1, by=~CREDLUGAR2, design =.x, FUN=svyciprop, vartype=c('se','ci')) %>%
 
                   mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU") %>%
                   select(-`se.as.numeric(MOV_INFLU_e1)`,-MOV_INFLU_e1) %>% data.frame),
 
     rota = map(.x = df ,
-                 .f = ~svyby(~MOV_ROTA_e1, by=~CREDLUGAR, design =.x, FUN=svyciprop, vartype=c('se','ci')) %>%
+                 .f = ~svyby(~MOV_ROTA_e1, by=~CREDLUGAR2, design =.x, FUN=svyciprop, vartype=c('se','ci')) %>%
 
                  mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA") %>%
                  select(-`se.as.numeric(MOV_ROTA_e1)`,-MOV_ROTA_e1) %>% data.frame) ) %>%
@@ -201,7 +375,7 @@ df3<-df2 %>%
   mutate(ANIO = as.character(ANIO))
 
 
-ggplot(data = df3, aes(x = vacunatipo, y = vacuna, fill = CREDLUGAR)) +
+ggplot(data = df3, aes(x = vacunatipo, y = vacuna, fill = CREDLUGAR2)) +
 
   geom_col( position = position_dodge(width = 0.85), width = 0.8) +
 
@@ -225,9 +399,84 @@ ggplot(data = df3, aes(x = vacunatipo, y = vacuna, fill = CREDLUGAR)) +
   theme(axis.text.x = element_text(size = 7),
         strip.text = element_text(size = 9))
 
-ggsave("cred.png",width = 18)
+#ggsave("cred.png",width = 18)
 
 
+
+```
+
+# CRED (ORIGEN)
+```{r}
+df3<-df2 %>%
+
+  mutate(
+    ptv = map(.x = df ,
+                 .f = ~svyby(~MOV_PTV_e1, by=~tiposeguro, design =.x, FUN=svyciprop, vartype=c('se','ci')) %>%
+
+                mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV") %>%
+                select(-`se.as.numeric(MOV_PTV_e1)`,-MOV_PTV_e1) %>% data.frame),
+
+    neumo = map(.x = df ,
+                 .f = ~svyby(~MOV_NEUMO_e1, by=~tiposeguro, design =.x, FUN=svyciprop, vartype=c('se','ci')) %>%
+
+                  mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO") %>%
+                  select(-`se.as.numeric(MOV_NEUMO_e1)`,-MOV_NEUMO_e1) %>% data.frame),
+
+    influ = map(.x = df ,
+                 .f = ~svyby(~MOV_INFLU_e1, by=~tiposeguro, design =.x, FUN=svyciprop, vartype=c('se','ci')) %>%
+
+                  mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU") %>%
+                  select(-`se.as.numeric(MOV_INFLU_e1)`,-MOV_INFLU_e1) %>% data.frame),
+
+    rota = map(.x = df ,
+                 .f = ~svyby(~MOV_ROTA_e1, by=~tiposeguro, design =.x, FUN=svyciprop, vartype=c('se','ci')) %>%
+
+                 mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA") %>%
+                 select(-`se.as.numeric(MOV_ROTA_e1)`,-MOV_ROTA_e1) %>% data.frame) ) %>%
+
+  select(-data) %>%
+
+  mutate(
+
+  pretotal1  = map2(.x = ptv, .y = neumo, .f = ~bind_rows(.x,.y)),
+  pretotal2  = map2(.x = influ, .y = rota, .f = ~bind_rows(.x,.y)),
+
+  total  = map2(.x = pretotal1, .y = pretotal2, .f = ~bind_rows(.x,.y)),
+
+) %>%
+
+  select(ANIO,total) %>%
+
+  ungroup() %>%
+
+  unnest(cols = c(total)) %>%
+
+  #full_join(region_shape, by="DEPARTAMEN") %>%
+
+  mutate(ANIO = as.character(ANIO))
+
+
+
+ggplot(data = df3, aes(x = vacunatipo, y = vacuna, fill = tiposeguro)) +
+
+  geom_col( position = position_dodge(width = 1), width = 0.8, alpha = 0.8) +
+
+  geom_errorbar(aes(ymin = ci_l,
+                    ymax = ci_u),
+
+                position = position_dodge(width = 1),
+
+                width = 0.25) +
+
+
+  scale_fill_manual(values = c("#9E5797","#6570C6")) +
+
+  facet_wrap(facets = ~ANIO, ncol = 4, scale = "free_x") +
+
+  theme_minimal() +
+
+  theme(axis.text.x = element_text(size = 7),
+        strip.text = element_text(size = 9))
 
 ```
 
@@ -475,6 +724,7 @@ ggplot(data = df3, aes(x = vacunatipo, y = vacuna, fill = INDICERIQUEZA)) +
 
 
 ```
+
 
 
 # REGION
