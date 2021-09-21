@@ -16,11 +16,14 @@ output:
 # Bases
 
 ```{r, echo=F, warning=F, message=F, error=F}
+
 library(tidyverse)
 library(gtsummary)
 library(survey)
 library(RColorBrewer)
 library(sf)
+library(ggupset)
+library(questionr)
 
 region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 ```
@@ -36,7 +39,7 @@ V001 : CONGLOMERADO V022 : ESTRATO V005 : FACTOR DE PONDERACION MUJER
 ```{r,warning=F, message=F, error=F}
 
 # Eliminando bases que no se usan
-rm(list=ls())
+#rm(list=ls())
 
 # Base de trabajo
 MOV_GENERAL <- read.csv("./BD.INTERMEDIAS/mov_general.csv")
@@ -888,7 +891,8 @@ ptv1<-
          ci_h = `97.5%`,
          vacunatipo = "ptv1") %>% 
   select(ANIO,ci_l,ci_h,vacunatipo,vacuna)
-  
+
+
   
 influ1<-  
   df2 %>%
@@ -910,7 +914,8 @@ influ1<-
          ci_h = `97.5%`,
          vacunatipo = "influ1") %>% 
   select(ANIO,ci_l,ci_h,vacunatipo,vacuna)
-  
+
+
 
 neumo1<-  
   df2 %>%
@@ -958,43 +963,137 @@ rota1<-
 
 
 
-rbind(ptv1,neumo1,influ1,rota1) %>% 
-  #ungroup() %>% 
-  ggplot(aes(x = as.factor(ANIO), y = vacuna*100, 
-             ymin = ci_l*100, ymax = ci_h*100, 
-             fill= vacunatipo, col = vacunatipo, group = vacunatipo))+
-  
-  geom_smooth(alpha = 0.3, size = 1.2) +
-  scale_fill_manual(values = c("#595260","#7ECA9C","#A98B98","#AD6C80"),
-                     labels = c("INFLU1","NM1","PTV1","ROTA1")) +
-  
-  scale_color_manual(values = c("#595260","#7ECA9C","#A98B98","#AD6C80"),
-                     labels = c("INFLU1","NM1","PTV1","ROTA1")) +
-  
-  xlab("Years") +
-  scale_x_discrete(expand = c(0, 0.15))+
-  ylab("Prop. %")+
-  
-  geom_hline(aes(yintercept = 85), linetype = "dashed") + 
-  
-  theme(
-    axis.title = element_text(face ="bold", size = 11),
-    legend.text = element_text(size = 8, face = "bold"),
-    axis.text = element_text(face = "bold", family = "Arial"),
-    axis.text.x = element_text( size = 9),
-    legend.position = "top",
-    legend.title = element_blank(),
-    axis.line = element_line(colour = "black", size = 1),
-    panel.background = element_blank(),
-    strip.background = element_blank(),
-    strip.text = element_text(face = "bold")
-  ) 
+
+# rbind(ptv1,neumo1,influ1,rota1) %>% 
+#   #ungroup() %>% 
+#   ggplot(aes(x = as.factor(ANIO), y = vacuna*100, 
+#              ymin = ci_l*100, ymax = ci_h*100, 
+#              fill= vacunatipo, col = vacunatipo, group = vacunatipo))+
+#   
+#   geom_smooth(alpha = 0.3, size = 1.2) +
+#   scale_fill_manual(values = c("#595260","#7ECA9C","#A98B98","#AD6C80"),
+#                      labels = c("INFLU1","NM1","PTV1","ROTA1")) +
+#   
+#   scale_color_manual(values = c("#595260","#7ECA9C","#A98B98","#AD6C80"),
+#                      labels = c("INFLU1","NM1","PTV1","ROTA1")) +
+#   
+#   xlab("Years") +
+#   scale_x_discrete(expand = c(0, 0.15))+
+#   ylab("Prop. %")+
+#   
+#   geom_hline(aes(yintercept = 85), linetype = "dashed") + 
+#   
+#   theme(
+#     axis.title = element_text(face ="bold", size = 11),
+#     legend.text = element_text(size = 8, face = "bold"),
+#     axis.text = element_text(face = "bold", family = "Arial"),
+#     axis.text.x = element_text( size = 9),
+#     legend.position = "top",
+#     legend.title = element_blank(),
+#     axis.line = element_line(colour = "black", size = 1),
+#     panel.background = element_blank(),
+#     strip.background = element_blank(),
+#     strip.text = element_text(face = "bold")
+#   ) 
              
 #ggsave("1raDosisTotal.png",width = 8, height = 6)           
 
 
 
+
+t<-MOV_GENERAL %>% 
+  select(ANIO,S45PV1_1,S45PV2_1,S45PV3_1) %>% 
+  mutate(vacuna  = ifelse(S45PV1_1 == 1 & S45PV2_1 == 1 & S45PV3_1 ==1, list(c("PTV1","PTV2","PTV3")),
+                          ifelse(S45PV1_1 == 0 & S45PV2_1 == 0 & S45PV3_1 ==0, list(c(NA)),
+                                 ifelse(S45PV1_1 == 1 & S45PV2_1 == 0 & S45PV3_1 ==0, list(c("PTV1")),
+                                        ifelse(S45PV1_1 == 1 & S45PV2_1 == 1 & S45PV3_1 ==0, list(c("PTV1","PTV2")),NA)))) 
+         
+         )
+
 ```
+
+# ggupset DE LAS 3 DOSIS DE VACUNACION 
+
+```{r}
+#rm(list=ls())
+
+# Base de trabajo
+MOV_GENERAL <- read.csv("./BD.INTERMEDIAS/mov_general.csv")
+
+df2<-MOV_GENERAL %>%
+  
+  mutate(vacuna1  = ifelse(S45PV1_1 == 1 & S45PV2_1 == 1 & S45PV3_1 ==1, list(c("PTV1","PTV2","PTV3")),
+                          ifelse(S45PV1_1 == 0 & S45PV2_1 == 0 & S45PV3_1 ==0, list(c(NA)),
+                                 ifelse(S45PV1_1 == 1 & S45PV2_1 == 0 & S45PV3_1 ==0, list(c("PTV1")),
+                                        ifelse(S45PV1_1 == 1 & S45PV2_1 == 1 & S45PV3_1 ==0, list(c("PTV1","PTV2")),NA)))),
+         
+         
+         vacuna2  = ifelse(S45NM1_1 == 1 & S45NM2_1 == 1 & S45NM3_1 ==1, list(c("NEUMO1","NEUMO2","NEUMO3")),
+                          ifelse(S45NM1_1 == 0 & S45NM2_1 == 0 & S45NM3_1 ==0, list(c(NA)),
+                                 ifelse(S45NM1_1 == 1 & S45NM2_1 == 0 & S45NM3_1 ==0, list(c("NEUMO1")),
+                                        ifelse(S45NM1_1 == 1 & S45NM2_1 == 1 & S45NM3_1 ==0, list(c("NEUMO1","NEUMO2")),NA)))),
+         
+         
+         
+         vacuna3 = ifelse(S45IF1_1 == 1 & S45IF2_1 == 1, list(c("INFLU1","INFLU2")),
+                         ifelse(S45IF1_1 == 0 & S45IF2_1 == 0, list(c(NA)),
+                                ifelse(S45IF1_1 == 1 & S45IF2_1 == 0, list(c("INFLU1")),NA))),
+         
+         
+         
+         vacuna4 = ifelse(S45RT1_1 == 1 & S45RT1_1 == 1, list(c("ROTA1","ROTA2")),
+                         ifelse(S45RT1_1 == 0 & S45RT1_1 == 0, list(c(NA)),
+                                ifelse(S45RT1_1 == 1 & S45RT1_1 == 0, list(c("ROTA1")),NA))),
+         
+         
+         
+         vacuna5 = ifelse(S45PV1_1==1 & S45RT1_1 == 1 & S45IF1_1==1 & S45NM1_1 == 1, list(c("PTV1","ROTA1","INFLU1","NEUMO1")),
+                          ifelse(S45PV1_1==0 & S45RT1_1 == 0 & S45IF1_1==0 & S45NM1_1 == 0, list(c(NA)),
+                                 ifelse(S45PV1_1==1 & S45RT1_1 == 1 & S45IF1_1==1 & S45NM1_1 == 0, list(c("PTV1","ROTA1","INFLU1")),
+                                        ifelse(S45PV1_1==0 & S45RT1_1 == 1 & S45IF1_1==1 & S45NM1_1 == 1, list(c("ROTA1","INFLU1","NEUMO1")),
+                                               ifelse(S45PV1_1==1 & S45RT1_1 == 0 & S45IF1_1==1 & S45NM1_1 == 1, list(c("PTV1","INFLU1","NEUMO1")),
+                                                      ifelse(S45PV1_1==1 & S45RT1_1 == 1 & S45IF1_1==0 & S45NM1_1 == 1, list(c("PTV1","ROTA1","INFLU1")),
+                                                             ifelse(S45PV1_1==1 & S45RT1_1 == 1 & S45IF1_1==0 & S45NM1_1 == 0,list(c("PTV1","ROTA1")),
+                                                                    ifelse(S45PV1_1==0 & S45RT1_1 == 0 & S45IF1_1==1 & S45NM1_1 == 1,list(c("INFLU1","NEUMO1")),
+                                                                           ifelse(S45PV1_1==1 & S45RT1_1 == 0 & S45IF1_1==0 & S45NM1_1 == 1,list(c("PTV1","NEUMO1")),
+                                                                                  ifelse(S45PV1_1==0 & S45RT1_1 == 1 & S45IF1_1==0 & S45NM1_1 == 1,list(c("ROTA1","NEUMO1")),
+                                                                                         ifelse(S45PV1_1==1 & S45RT1_1 == 0 & S45IF1_1==1 & S45NM1_1 == 0,list(c("PTV1","INFLU1")),
+                                                                                                ifelse(S45PV1_1==0 & S45RT1_1 == 1 & S45IF1_1==1 & S45NM1_1 == 0,list(c("ROTA1","INFLU1")),
+                                                                                                       ifelse(S45PV1_1==1 & S45RT1_1 == 0 & S45IF1_1==0 & S45NM1_1 == 0,list(c("PTV1")),
+                                                                                                              ifelse(S45PV1_1==0 & S45RT1_1 == 1 & S45IF1_1==0 & S45NM1_1 == 0,list(c("ROTA1")),
+                                                                                                                     ifelse(S45PV1_1==0 & S45RT1_1 == 0 & S45IF1_1==1 & S45NM1_1 == 0,list(c("INFLU1")),
+                                                                                                                ifelse(S45PV1_1==0 & S45RT1_1 == 0 & S45IF1_1==0 & S45NM1_1 == 1,list(c("NEUMO1")),NA)))))))))))))))),
+         
+         
+         
+         year = ANIO) %>% 
+  
+  group_by(ANIO) %>% 
+  nest() %>%
+  mutate(
+    df= map(.x = data,
+            .f = ~svydesign(id =~ V001, strata =~ V022, probs=~V005, data=.x))) 
+
+options(survey.lonely.psu="remove")
+```
+
+
+```{r}
+ggupset<-
+  df2 %>% 
+  mutate(
+    
+    upsetptv =map(.x = df,
+                  .f = ~ggsurvey(.x) +
+                    aes(x = vacuna5)+
+                    geom_bar()+
+                    scale_x_upset(n_intersections= 20)+
+                    
+                    facet_wrap(~year, scales = "free")))
+
+
+```
+
 
 ## OPV EN LOS 11 ANIOS
 
@@ -1193,6 +1292,7 @@ covertura.region<-
   
     )
 
+covertura.region$neumo1
 ```
 
 ## Graficos 
