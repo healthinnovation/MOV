@@ -24,6 +24,8 @@ library(RColorBrewer)
 library(sf)
 library(ggupset)
 library(questionr)
+library(tmap)
+library(GGally)
 
 region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 ```
@@ -246,6 +248,227 @@ income<-
 
 descriptivo<-bind_rows(housing,credtype,creloc,edumadre,income,etnia)
 ```
+
+#DOSIS 11 ANIOS
+
+Primeras Dosis de las 4 vacunas en los 11 anios de estudio.
+
+```{r, warning=F, message=F, error=F}
+ptv1<-
+  df2 %>%
+  mutate(
+    
+    vacuna=map_dbl(.x = df,
+             .f =~svymean(~S45PV1_1, design =.x, na.rm = T)),
+    
+    ptv1=map(.x = df,
+             .f =~svyciprop(~S45PV1_1, design =.x, na.rm = T)),
+    
+     ptv1ci = map(.x = ptv1,
+                 .f = ~confint(.x) %>% 
+                   as.data.frame() %>%
+                   rownames_to_column("tar"))) %>% 
+  unnest(cols = c(ptv1ci)) %>% 
+  as.data.frame() %>% 
+  mutate(ci_l = `2.5%`,
+         ci_h = `97.5%`,
+         vacunatipo = "ptv1") %>% 
+  select(ANIO,ci_l,ci_h,vacunatipo,vacuna)
+
+
+  
+influ1<-  
+  df2 %>%
+  mutate(
+    
+    vacuna=map_dbl(.x = df,
+             .f =~svymean(~S45IF1_1, design =.x, na.rm = T)),
+    
+    influ1=map(.x = df,
+             .f =~svyciprop(~S45IF1_1, design =.x, na.rm = T)),
+    
+     influci = map(.x = influ1,
+                 .f = ~confint(.x) %>% 
+                   as.data.frame() %>%
+                   rownames_to_column("tar"))) %>% 
+  unnest(cols = c(influci)) %>% 
+  as.data.frame() %>% 
+  mutate(ci_l = `2.5%`,
+         ci_h = `97.5%`,
+         vacunatipo = "influ1") %>% 
+  select(ANIO,ci_l,ci_h,vacunatipo,vacuna)
+
+
+
+neumo1<-  
+  df2 %>%
+  mutate(
+    
+    vacuna=map_dbl(.x = df,
+             .f =~svymean(~S45NM1_1, design =.x, na.rm = T)),
+    
+    nuemo1=map(.x = df,
+             .f =~svyciprop(~S45NM1_1, design =.x, na.rm = T)),
+    
+     neumoci = map(.x = nuemo1,
+                 .f = ~confint(.x) %>% 
+                   as.data.frame() %>%
+                   rownames_to_column("tar"))) %>% 
+  unnest(cols = c(neumoci)) %>% 
+  as.data.frame() %>% 
+  mutate(ci_l = `2.5%`,
+         ci_h = `97.5%`,
+         vacunatipo = "neumo1") %>% 
+  select(ANIO,ci_l,ci_h,vacunatipo,vacuna)
+
+
+
+rota1<-  
+  df2 %>%
+  mutate(
+    
+    vacuna=map_dbl(.x = df,
+             .f =~svymean(~S45RT1_1, design =.x, na.rm = T)),
+    
+    rota1=map(.x = df,
+             .f =~svyciprop(~S45RT1_1, design =.x, na.rm = T)),
+    
+     rotaci = map(.x = rota1,
+                 .f = ~confint(.x) %>% 
+                   as.data.frame() %>%
+                   rownames_to_column("tar"))) %>% 
+  unnest(cols = c(rotaci)) %>% 
+  as.data.frame() %>% 
+  mutate(ci_l = `2.5%`,
+         ci_h = `97.5%`,
+         vacunatipo = "rota1") %>% 
+  select(ANIO,ci_l,ci_h,vacunatipo,vacuna)
+
+
+
+
+ rbind(ptv1,neumo1,influ1,rota1) %>% 
+  ungroup() %>%
+  ggplot(aes(x = as.factor(ANIO), y = vacuna*100,
+             ymin = ci_l*100, ymax = ci_h*100,
+             fill= vacunatipo, col = vacunatipo, group = vacunatipo))+
+
+  geom_smooth(alpha = 0.3, size = 1.2) +
+  scale_fill_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80"),
+                     labels = c("INFLU1","NM1","PTV1","ROTA1")) +
+
+  scale_color_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80"),
+                     labels = c("INFLU1","NM1","PTV1","ROTA1")) +
+
+  xlab("Years") +
+  scale_x_discrete(expand = c(0, 0.15))+
+  ylab("Prop. %")+
+
+  geom_hline(aes(yintercept = 85), linetype = "dashed") +
+
+  theme(
+    axis.title = element_text(face ="bold", size = 11),
+    legend.text = element_text(size = 8, face = "bold"),
+    axis.text = element_text(face = "bold", family = "Arial"),
+    axis.text.x = element_text( size = 9),
+    legend.position = "top",
+    legend.title = element_blank(),
+    axis.line = element_line(colour = "black", size = 1),
+    panel.background = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(face = "bold")
+  )
+             
+ggsave("Fig1.png",width = 8, height = 6)           
+
+```
+
+# ggupset DE LAS 3 DOSIS DE VACUNACION 
+
+```{r}
+#rm(list=ls())
+
+# Base de trabajo
+MOV_GENERAL <- read.csv("./BD.INTERMEDIAS/mov_general.csv")
+
+MOV_GENERAL<-MOV_GENERAL %>%
+  
+  mutate(
+    
+    PTVcompleta  = ifelse(S45PV1_1 ==1 & S45PV2_1 == 1 & S45PV3_1 == 1,1,0),
+    NEUMOcompleta = ifelse(S45NM1_1==1 & S45NM2_1==1 & S45NM3_1==1,1,0),
+    INLFUcompelta = ifelse(S45IF1_1==1 & S45IF2_1==1,1,0),
+    ROTAcompleta = ifelse(S45RT1_1 ==1 & S45RT1_1==1,1,0),
+    
+  
+         
+         vacuna5 = ifelse(PTVcompleta==1 & ROTAcompleta == 1 & INLFUcompelta==1 & NEUMOcompleta == 1, list(c("PTVc","ROTAc","INFLUc","NEUMOc")),
+                          ifelse(PTVcompleta==0 & ROTAcompleta == 0 & INLFUcompelta==0 & NEUMOcompleta == 0, list(c(NA)),
+                                 ifelse(PTVcompleta==1 & ROTAcompleta == 1 & INLFUcompelta==1 & NEUMOcompleta == 0, list(c("PTVc","ROTAc","INFLUc")),
+                                        ifelse(PTVcompleta==0 & ROTAcompleta == 1 & INLFUcompelta==1 & NEUMOcompleta == 1, list(c("ROTAc","INFLUc","NEUMOc")),
+                                               ifelse(PTVcompleta==1 & ROTAcompleta == 0 & INLFUcompelta==1 & NEUMOcompleta == 1, list(c("PTVc","INFLUc","NEUMOc")),
+                                                      ifelse(PTVcompleta==1 & ROTAcompleta == 1 & INLFUcompelta==0 & NEUMOcompleta == 1, list(c("PTVc","ROTAc","INFLUc")),
+                                                             ifelse(PTVcompleta==1 & ROTAcompleta == 1 & INLFUcompelta==0 & NEUMOcompleta == 0,list(c("PTVc","ROTAc")),
+                                                                    ifelse(PTVcompleta==0 & ROTAcompleta == 0 & INLFUcompelta==1 & NEUMOcompleta == 1,list(c("INFLUc","NEUMOc")),
+                                                                           ifelse(PTVcompleta==1 & ROTAcompleta == 0 & INLFUcompelta==0 & NEUMOcompleta == 1,list(c("PTVc","NEUMOc")),
+                                                                                  ifelse(PTVcompleta==0 & ROTAcompleta == 1 & INLFUcompelta==0 & NEUMOcompleta == 1,list(c("ROTAc","NEUMOc")),
+                                                                                         ifelse(PTVcompleta==1 & ROTAcompleta == 0 & INLFUcompelta==1 & NEUMOcompleta == 0,list(c("PTVc","INFLUc")),
+                                                                                                ifelse(PTVcompleta==0 & ROTAcompleta == 1 & INLFUcompelta==1 & NEUMOcompleta == 0,list(c("ROTAc","INFLUc")),
+                                                                                                       ifelse(PTVcompleta==1 & ROTAcompleta == 0 & INLFUcompelta==0 & NEUMOcompleta == 0,list(c("PTVc")),
+                                                                                                              ifelse(PTVcompleta==0 & ROTAcompleta == 1 & INLFUcompelta==0 & NEUMOcompleta == 0,list(c("ROTAc")),
+                                                                                                                     ifelse(PTVcompleta==0 & ROTAcompleta == 0 & INLFUcompelta==1 & NEUMOcompleta == 0,list(c("INFLUc")),
+                                                                                                                ifelse(PTVcompleta==0 & ROTAcompleta == 0 & INLFUcompelta==0 & NEUMOcompleta == 1,list(c("NEUMOc")),NA)))))))))))))))),
+         
+         
+         
+         year = ANIO)
+
+
+###########
+
+df2<-MOV_GENERAL %>%
+  
+  mutate(
+    tiposeguro = ifelse(CREDLUGAR == "H.MINSA/FFAA"|
+                        CREDLUGAR == "H.ESSALUD"|
+                        CREDLUGAR == "CS/POSTA MINSA"|
+                        CREDLUGAR == "CS.ESSALUD", "Estado",
+                        ifelse(CREDLUGAR == "OTRO/PRIVADO","Privado",NA)),
+    
+    
+    CREDLUGAR2 = ifelse(CREDLUGAR == "H.MINSA/FFAA"|CREDLUGAR == "H.ESSALUD","Hospital",
+                        ifelse(CREDLUGAR == "CS/POSTA MINSA"|CREDLUGAR == "CS.ESSALUD","CentroSalud",CREDLUGAR))
+  ) %>% 
+  
+  group_by(ANIO) %>% 
+  nest() %>%
+  mutate(
+    df= map(.x = data,
+            .f = ~svydesign(id =~ V001, strata =~ V022, probs=~V005, data=.x))) 
+
+options(survey.lonely.psu="remove")
+
+```
+
+
+```{r}
+ggupset.vacuna<-
+  ggplot(MOV_GENERAL) +
+  aes(x = vacuna5)+
+  geom_bar(fill = "#506D84")+
+  geom_text(stat='count', aes(label=after_stat(count)), vjust=-1, size = 3) +
+  theme_minimal()+
+  theme(
+    panel.grid = element_blank()
+  )+
+  labs(x = "Complete doses", y = "")+
+  scale_x_upset(n_intersections= 13) +
+  scale_y_continuous(breaks = NULL)
+
+ggsave("Fig2.png", width = 10, height = 6)
+
+```
+
 
 
 # PROPORCION POR CRED
@@ -866,236 +1089,15 @@ df3
 ```
 
 
-#DOSIS 11 ANIOS
 
-Primeras Dosis de las 4 vacunas en los 11 anios de estudio.
-
-```{r, warning=F, message=F, error=F}
-ptv1<-
-  df2 %>%
-  mutate(
-    
-    vacuna=map_dbl(.x = df,
-             .f =~svymean(~S45PV1_1, design =.x, na.rm = T)),
-    
-    ptv1=map(.x = df,
-             .f =~svyciprop(~S45PV1_1, design =.x, na.rm = T)),
-    
-     ptv1ci = map(.x = ptv1,
-                 .f = ~confint(.x) %>% 
-                   as.data.frame() %>%
-                   rownames_to_column("tar"))) %>% 
-  unnest(cols = c(ptv1ci)) %>% 
-  as.data.frame() %>% 
-  mutate(ci_l = `2.5%`,
-         ci_h = `97.5%`,
-         vacunatipo = "ptv1") %>% 
-  select(ANIO,ci_l,ci_h,vacunatipo,vacuna)
-
-
-  
-influ1<-  
-  df2 %>%
-  mutate(
-    
-    vacuna=map_dbl(.x = df,
-             .f =~svymean(~S45IF1_1, design =.x, na.rm = T)),
-    
-    influ1=map(.x = df,
-             .f =~svyciprop(~S45IF1_1, design =.x, na.rm = T)),
-    
-     influci = map(.x = influ1,
-                 .f = ~confint(.x) %>% 
-                   as.data.frame() %>%
-                   rownames_to_column("tar"))) %>% 
-  unnest(cols = c(influci)) %>% 
-  as.data.frame() %>% 
-  mutate(ci_l = `2.5%`,
-         ci_h = `97.5%`,
-         vacunatipo = "influ1") %>% 
-  select(ANIO,ci_l,ci_h,vacunatipo,vacuna)
-
-
-
-neumo1<-  
-  df2 %>%
-  mutate(
-    
-    vacuna=map_dbl(.x = df,
-             .f =~svymean(~S45NM1_1, design =.x, na.rm = T)),
-    
-    nuemo1=map(.x = df,
-             .f =~svyciprop(~S45NM1_1, design =.x, na.rm = T)),
-    
-     neumoci = map(.x = nuemo1,
-                 .f = ~confint(.x) %>% 
-                   as.data.frame() %>%
-                   rownames_to_column("tar"))) %>% 
-  unnest(cols = c(neumoci)) %>% 
-  as.data.frame() %>% 
-  mutate(ci_l = `2.5%`,
-         ci_h = `97.5%`,
-         vacunatipo = "neumo1") %>% 
-  select(ANIO,ci_l,ci_h,vacunatipo,vacuna)
-
-
-
-rota1<-  
-  df2 %>%
-  mutate(
-    
-    vacuna=map_dbl(.x = df,
-             .f =~svymean(~S45RT1_1, design =.x, na.rm = T)),
-    
-    rota1=map(.x = df,
-             .f =~svyciprop(~S45RT1_1, design =.x, na.rm = T)),
-    
-     rotaci = map(.x = rota1,
-                 .f = ~confint(.x) %>% 
-                   as.data.frame() %>%
-                   rownames_to_column("tar"))) %>% 
-  unnest(cols = c(rotaci)) %>% 
-  as.data.frame() %>% 
-  mutate(ci_l = `2.5%`,
-         ci_h = `97.5%`,
-         vacunatipo = "rota1") %>% 
-  select(ANIO,ci_l,ci_h,vacunatipo,vacuna)
-
-
-
-
-# rbind(ptv1,neumo1,influ1,rota1) %>% 
-#   #ungroup() %>% 
-#   ggplot(aes(x = as.factor(ANIO), y = vacuna*100, 
-#              ymin = ci_l*100, ymax = ci_h*100, 
-#              fill= vacunatipo, col = vacunatipo, group = vacunatipo))+
-#   
-#   geom_smooth(alpha = 0.3, size = 1.2) +
-#   scale_fill_manual(values = c("#595260","#7ECA9C","#A98B98","#AD6C80"),
-#                      labels = c("INFLU1","NM1","PTV1","ROTA1")) +
-#   
-#   scale_color_manual(values = c("#595260","#7ECA9C","#A98B98","#AD6C80"),
-#                      labels = c("INFLU1","NM1","PTV1","ROTA1")) +
-#   
-#   xlab("Years") +
-#   scale_x_discrete(expand = c(0, 0.15))+
-#   ylab("Prop. %")+
-#   
-#   geom_hline(aes(yintercept = 85), linetype = "dashed") + 
-#   
-#   theme(
-#     axis.title = element_text(face ="bold", size = 11),
-#     legend.text = element_text(size = 8, face = "bold"),
-#     axis.text = element_text(face = "bold", family = "Arial"),
-#     axis.text.x = element_text( size = 9),
-#     legend.position = "top",
-#     legend.title = element_blank(),
-#     axis.line = element_line(colour = "black", size = 1),
-#     panel.background = element_blank(),
-#     strip.background = element_blank(),
-#     strip.text = element_text(face = "bold")
-#   ) 
-             
-#ggsave("1raDosisTotal.png",width = 8, height = 6)           
-
-
-
-
-t<-MOV_GENERAL %>% 
-  select(ANIO,S45PV1_1,S45PV2_1,S45PV3_1) %>% 
-  mutate(vacuna  = ifelse(S45PV1_1 == 1 & S45PV2_1 == 1 & S45PV3_1 ==1, list(c("PTV1","PTV2","PTV3")),
-                          ifelse(S45PV1_1 == 0 & S45PV2_1 == 0 & S45PV3_1 ==0, list(c(NA)),
-                                 ifelse(S45PV1_1 == 1 & S45PV2_1 == 0 & S45PV3_1 ==0, list(c("PTV1")),
-                                        ifelse(S45PV1_1 == 1 & S45PV2_1 == 1 & S45PV3_1 ==0, list(c("PTV1","PTV2")),NA)))) 
-         
-         )
-
-```
-
-# ggupset DE LAS 3 DOSIS DE VACUNACION 
-
-```{r}
-#rm(list=ls())
-
-# Base de trabajo
-MOV_GENERAL <- read.csv("./BD.INTERMEDIAS/mov_general.csv")
-
-df2<-MOV_GENERAL %>%
-  
-  mutate(vacuna1  = ifelse(S45PV1_1 == 1 & S45PV2_1 == 1 & S45PV3_1 ==1, list(c("PTV1","PTV2","PTV3")),
-                          ifelse(S45PV1_1 == 0 & S45PV2_1 == 0 & S45PV3_1 ==0, list(c(NA)),
-                                 ifelse(S45PV1_1 == 1 & S45PV2_1 == 0 & S45PV3_1 ==0, list(c("PTV1")),
-                                        ifelse(S45PV1_1 == 1 & S45PV2_1 == 1 & S45PV3_1 ==0, list(c("PTV1","PTV2")),NA)))),
-         
-         
-         vacuna2  = ifelse(S45NM1_1 == 1 & S45NM2_1 == 1 & S45NM3_1 ==1, list(c("NEUMO1","NEUMO2","NEUMO3")),
-                          ifelse(S45NM1_1 == 0 & S45NM2_1 == 0 & S45NM3_1 ==0, list(c(NA)),
-                                 ifelse(S45NM1_1 == 1 & S45NM2_1 == 0 & S45NM3_1 ==0, list(c("NEUMO1")),
-                                        ifelse(S45NM1_1 == 1 & S45NM2_1 == 1 & S45NM3_1 ==0, list(c("NEUMO1","NEUMO2")),NA)))),
-         
-         
-         
-         vacuna3 = ifelse(S45IF1_1 == 1 & S45IF2_1 == 1, list(c("INFLU1","INFLU2")),
-                         ifelse(S45IF1_1 == 0 & S45IF2_1 == 0, list(c(NA)),
-                                ifelse(S45IF1_1 == 1 & S45IF2_1 == 0, list(c("INFLU1")),NA))),
-         
-         
-         
-         vacuna4 = ifelse(S45RT1_1 == 1 & S45RT1_1 == 1, list(c("ROTA1","ROTA2")),
-                         ifelse(S45RT1_1 == 0 & S45RT1_1 == 0, list(c(NA)),
-                                ifelse(S45RT1_1 == 1 & S45RT1_1 == 0, list(c("ROTA1")),NA))),
-         
-         
-         
-         vacuna5 = ifelse(S45PV1_1==1 & S45RT1_1 == 1 & S45IF1_1==1 & S45NM1_1 == 1, list(c("PTV1","ROTA1","INFLU1","NEUMO1")),
-                          ifelse(S45PV1_1==0 & S45RT1_1 == 0 & S45IF1_1==0 & S45NM1_1 == 0, list(c(NA)),
-                                 ifelse(S45PV1_1==1 & S45RT1_1 == 1 & S45IF1_1==1 & S45NM1_1 == 0, list(c("PTV1","ROTA1","INFLU1")),
-                                        ifelse(S45PV1_1==0 & S45RT1_1 == 1 & S45IF1_1==1 & S45NM1_1 == 1, list(c("ROTA1","INFLU1","NEUMO1")),
-                                               ifelse(S45PV1_1==1 & S45RT1_1 == 0 & S45IF1_1==1 & S45NM1_1 == 1, list(c("PTV1","INFLU1","NEUMO1")),
-                                                      ifelse(S45PV1_1==1 & S45RT1_1 == 1 & S45IF1_1==0 & S45NM1_1 == 1, list(c("PTV1","ROTA1","INFLU1")),
-                                                             ifelse(S45PV1_1==1 & S45RT1_1 == 1 & S45IF1_1==0 & S45NM1_1 == 0,list(c("PTV1","ROTA1")),
-                                                                    ifelse(S45PV1_1==0 & S45RT1_1 == 0 & S45IF1_1==1 & S45NM1_1 == 1,list(c("INFLU1","NEUMO1")),
-                                                                           ifelse(S45PV1_1==1 & S45RT1_1 == 0 & S45IF1_1==0 & S45NM1_1 == 1,list(c("PTV1","NEUMO1")),
-                                                                                  ifelse(S45PV1_1==0 & S45RT1_1 == 1 & S45IF1_1==0 & S45NM1_1 == 1,list(c("ROTA1","NEUMO1")),
-                                                                                         ifelse(S45PV1_1==1 & S45RT1_1 == 0 & S45IF1_1==1 & S45NM1_1 == 0,list(c("PTV1","INFLU1")),
-                                                                                                ifelse(S45PV1_1==0 & S45RT1_1 == 1 & S45IF1_1==1 & S45NM1_1 == 0,list(c("ROTA1","INFLU1")),
-                                                                                                       ifelse(S45PV1_1==1 & S45RT1_1 == 0 & S45IF1_1==0 & S45NM1_1 == 0,list(c("PTV1")),
-                                                                                                              ifelse(S45PV1_1==0 & S45RT1_1 == 1 & S45IF1_1==0 & S45NM1_1 == 0,list(c("ROTA1")),
-                                                                                                                     ifelse(S45PV1_1==0 & S45RT1_1 == 0 & S45IF1_1==1 & S45NM1_1 == 0,list(c("INFLU1")),
-                                                                                                                ifelse(S45PV1_1==0 & S45RT1_1 == 0 & S45IF1_1==0 & S45NM1_1 == 1,list(c("NEUMO1")),NA)))))))))))))))),
-         
-         
-         
-         year = ANIO) %>% 
-  
-  group_by(ANIO) %>% 
-  nest() %>%
-  mutate(
-    df= map(.x = data,
-            .f = ~svydesign(id =~ V001, strata =~ V022, probs=~V005, data=.x))) 
-
-options(survey.lonely.psu="remove")
-```
-
-
-```{r}
-ggupset<-
-  df2 %>% 
-  mutate(
-    
-    upsetptv =map(.x = df,
-                  .f = ~ggsurvey(.x) +
-                    aes(x = vacuna5)+
-                    geom_bar()+
-                    scale_x_upset(n_intersections= 20)+
-                    
-                    facet_wrap(~year, scales = "free")))
-
-
-```
 
 
 ## OPV EN LOS 11 ANIOS
+
+```{r}
+
+```
+
 
 ```{r, warning=F, message=F, error=F}
 ptv1<-

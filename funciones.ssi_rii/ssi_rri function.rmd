@@ -104,7 +104,7 @@ prep.data <-function(MOV2020){ MOV2020 %>%
                                              )) %>% 
   
    # CON CRED O SEGURO
-   filter((CRED == "Si" | SEGURO == "Si")) %>% 
+   #filter((CRED == "Si" | SEGURO == "Si")) %>% 
   
   
   
