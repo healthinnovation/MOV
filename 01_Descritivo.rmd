@@ -393,6 +393,7 @@ MOV_GENERAL <- read.csv("./BD.INTERMEDIAS/mov_general.csv")
 
 MOV_GENERAL<-MOV_GENERAL %>%
   
+  
   mutate(
     
     PTVcompleta  = ifelse(S45PV1_1 ==1 & S45PV2_1 == 1 & S45PV3_1 == 1,1,0),
@@ -424,35 +425,11 @@ MOV_GENERAL<-MOV_GENERAL %>%
          year = ANIO)
 
 
-###########
-
-df2<-MOV_GENERAL %>%
-  
-  mutate(
-    tiposeguro = ifelse(CREDLUGAR == "H.MINSA/FFAA"|
-                        CREDLUGAR == "H.ESSALUD"|
-                        CREDLUGAR == "CS/POSTA MINSA"|
-                        CREDLUGAR == "CS.ESSALUD", "Estado",
-                        ifelse(CREDLUGAR == "OTRO/PRIVADO","Privado",NA)),
-    
-    
-    CREDLUGAR2 = ifelse(CREDLUGAR == "H.MINSA/FFAA"|CREDLUGAR == "H.ESSALUD","Hospital",
-                        ifelse(CREDLUGAR == "CS/POSTA MINSA"|CREDLUGAR == "CS.ESSALUD","CentroSalud",CREDLUGAR))
-  ) %>% 
-  
-  group_by(ANIO) %>% 
-  nest() %>%
-  mutate(
-    df= map(.x = data,
-            .f = ~svydesign(id =~ V001, strata =~ V022, probs=~V005, data=.x))) 
-
-options(survey.lonely.psu="remove")
-
 ```
 
 
 ```{r}
-ggupset.vacuna<-
+figura2a<-
   ggplot(MOV_GENERAL) +
   aes(x = vacuna5)+
   geom_bar(fill = "#506D84")+
@@ -465,8 +442,48 @@ ggupset.vacuna<-
   scale_x_upset(n_intersections= 13) +
   scale_y_continuous(breaks = NULL)
 
-ggsave("Fig2.png", width = 10, height = 6)
+ggsave("Fig2a.png", width = 10, height = 6)
 
+
+
+figura2b<-
+MOV_GENERAL %>% 
+  select(DEPARTAMEN,PTVcompleta:ROTAcompleta) %>% 
+  pivot_longer(cols = c(PTVcompleta:ROTAcompleta), names_to = "vacuna") %>% 
+  filter(value == 0) %>% 
+  group_by(DEPARTAMEN,vacuna) %>% 
+  summarise(numero = n()) %>% 
+  mutate(vacuna = recode(vacuna,"INLFUcompelta"="Influenza vaccine",
+                         "NEUMOcompleta"="Pneumococcal vaccine",
+                         "PTVcompleta"="Pentavalent vaccine",
+                         "ROTAcompleta"="Rotavirus vaccine"),
+         percent = round((numero/sum(numero)*100))) %>% 
+
+  left_join(region_shape) %>% 
+  st_as_sf() %>% 
+  
+  ggplot()+
+  geom_sf(aes(fill = percent, col = percent)) +
+   scale_fill_gradient(high  ="#0C6291", low = "#e5e5e5")+
+   scale_color_gradient(high ="#0C6291", low = "#e5e5e5") +
+  guides(fill = guide_colourbar(barheight = 0.5, barwidth = 25,title.position = "top", direction = "horizontal"))+
+  facet_wrap(~vacuna, nrow = 1)+
+  theme_minimal()+
+  labs(color = "% of non-vaccinations by regions", fill = "% of non-vaccinations by regions")+
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(size = 9, face = "bold"),
+    legend.text = element_text(size = 8),
+    panel.grid = element_blank(),
+    strip.text = element_text(size = 9, face = "bold"),
+    axis.text = element_text(size = 5))
+
+ggsave("figura2b.png", width = 8, height = 4)
+  
+
+figura2<-cowplot::plot_grid(figura2a,figura2b, ncol = 1, labels = c("A","B"), rel_heights = c(0.6,0.4))
+
+ggsave("figura2.png", height = 9, width = 8.5)
 ```
 
 
