@@ -442,7 +442,7 @@ figura2a<-
   scale_x_upset(n_intersections= 13) +
   scale_y_continuous(breaks = NULL)
 
-ggsave("Fig2a.png", width = 10, height = 6)
+#ggsave("Fig2a.png", width = 10, height = 6)
 
 
 
@@ -457,19 +457,21 @@ MOV_GENERAL %>%
                          "NEUMOcompleta"="Pneumococcal vaccine",
                          "PTVcompleta"="Pentavalent vaccine",
                          "ROTAcompleta"="Rotavirus vaccine"),
-         percent = round((numero/sum(numero)*100))) %>% 
+         percent = round((numero/sum(numero)*100)),
+         vacuna = factor(vacuna, levels = c("Influenza vaccine","Pneumococcal vaccine",
+                                             "Rotavirus vaccine","Pentavalent vaccine")))%>% 
 
   left_join(region_shape) %>% 
   st_as_sf() %>% 
   
   ggplot()+
-  geom_sf(aes(fill = percent, col = percent)) +
+  geom_sf(aes(fill = percent), col = "#b6cfde") +
    scale_fill_gradient(high  ="#0C6291", low = "#e5e5e5")+
-   scale_color_gradient(high ="#0C6291", low = "#e5e5e5") +
+   #scale_color_gradient(high ="#e5e5e5", low = "#e5e5e5") +
   guides(fill = guide_colourbar(barheight = 0.5, barwidth = 25,title.position = "top", direction = "horizontal"))+
   facet_wrap(~vacuna, nrow = 1)+
   theme_minimal()+
-  labs(color = "% of non-vaccinations by regions", fill = "% of non-vaccinations by regions")+
+  labs(color = "", fill = "% of non-vaccinations by regions")+
   theme(
     legend.position = "bottom",
     legend.title = element_text(size = 9, face = "bold"),
@@ -478,7 +480,7 @@ MOV_GENERAL %>%
     strip.text = element_text(size = 9, face = "bold"),
     axis.text = element_text(size = 5))
 
-ggsave("figura2b.png", width = 8, height = 4)
+#ggsave("figura2b.png", width = 8, height = 4)
   
 
 figura2<-cowplot::plot_grid(figura2a,figura2b, ncol = 1, labels = c("A","B"), rel_heights = c(0.6,0.4))
