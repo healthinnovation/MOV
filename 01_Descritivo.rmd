@@ -1113,7 +1113,37 @@ df3
 
 ## OPV EN LOS 11 ANIOS
 
-```{r}
+```{r,warning=F, message=F, error=F}
+
+# Eliminando bases que no se usan
+#rm(list=ls())
+
+# Base de trabajo
+MOV_GENERAL <- read.csv("./BD.INTERMEDIAS/mov_general.csv")
+
+df2<-MOV_GENERAL %>%
+  
+  filter((CRED == "Si" | SEGURO == "Si")) %>% 
+  
+  mutate(
+    tiposeguro = ifelse(CREDLUGAR == "H.MINSA/FFAA"|
+                        CREDLUGAR == "H.ESSALUD"|
+                        CREDLUGAR == "CS/POSTA MINSA"|
+                        CREDLUGAR == "CS.ESSALUD", "Estado",
+                        ifelse(CREDLUGAR == "OTRO/PRIVADO","Privado",NA)),
+    
+    
+    CREDLUGAR2 = ifelse(CREDLUGAR == "H.MINSA/FFAA"|CREDLUGAR == "H.ESSALUD","Hospital",
+                        ifelse(CREDLUGAR == "CS/POSTA MINSA"|CREDLUGAR == "CS.ESSALUD","CentroSalud",CREDLUGAR))
+  ) %>% 
+  
+  group_by(ANIO) %>% 
+  nest() %>%
+  mutate(
+    df= map(.x = data,
+            .f = ~svydesign(id =~ V001, strata =~ V022, probs=~V005, data=.x))) 
+
+options(survey.lonely.psu="remove")
 
 ```
 
@@ -1216,10 +1246,10 @@ rbind(ptv1,neumo1,influ1,rota1) %>%
              fill= vacunatipo, col = vacunatipo, group = vacunatipo))+
   
   geom_smooth(alpha = 0.3, size = 1.2) +
-  scale_fill_manual(values = c("#595260","#7ECA9C","#A98B98","#AD6C80"),
+  scale_fill_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80"),
                      labels = c("INFLU1","NM1","PTV1","ROTA1")) +
   
-  scale_color_manual(values = c("#595260","#7ECA9C","#A98B98","#AD6C80"),
+  scale_color_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80"),
                      labels = c("INFLU1","NM1","PTV1","ROTA1")) +
   
   xlab("Years") +
@@ -1242,7 +1272,7 @@ rbind(ptv1,neumo1,influ1,rota1) %>%
   ) 
 
 
-#ggsave("opv11anios.png",width = 8, height = 6)  
+ggsave("Fig3.png",width = 8, height = 6)  
 ```
 
 # REGION / DOSIS
@@ -1313,13 +1343,13 @@ covertura.region<-
   
     )
 
-covertura.region$neumo1
 ```
 
 ## Graficos 
 
 ```{r,fig.height= 8, fig.width= 13, warning=F, message=F, error=F}
-covertura.region %>%
+a<-
+  covertura.region %>%
   pivot_longer(cols = c(ptv1:ptv3), names_to = "INDEX") %>% 
   unnest(cols = c(value)) %>% 
   
@@ -1348,9 +1378,12 @@ covertura.region %>%
   )  +
   facet_wrap(~DEPARTAMEN) 
 
-#ggsave("ptv_regiones.png", width = 18, height = 10)
+cowplot::plot_grid(a,labels = c("A"))
+ggsave("ptv_regiones.png", width = 18, height = 10)
 
-covertura.region %>%
+
+b<-
+  covertura.region %>%
   pivot_longer(cols = c(neumo1:neumo3), names_to = "INDEX") %>% 
   unnest(cols = c(value)) %>% 
   
@@ -1379,10 +1412,13 @@ covertura.region %>%
   )  +
   facet_wrap(~DEPARTAMEN)
 
-# ggsave("neumo_regiones.png", width = 18, height = 10)
+cowplot::plot_grid(b,labels = c("B"))
+ ggsave("neumo_regiones.png", width = 18, height = 10)
 
 
-covertura.region %>%
+
+ c<-
+   covertura.region %>%
   pivot_longer(cols = c(influ1:influ2), names_to = "INDEX") %>% 
   unnest(cols = c(value)) %>% 
   
@@ -1411,10 +1447,13 @@ covertura.region %>%
   )  +
   facet_wrap(~DEPARTAMEN)
 
-# ggsave("influ_regiones.png", width = 18, height = 10)
+ cowplot::plot_grid(c,labels = c("C"))
+ ggsave("influ_regiones.png", width = 18, height = 10)
 
 
-covertura.region %>%
+
+ d<-
+   covertura.region %>%
   pivot_longer(cols = c(rota1:rota2), names_to = "INDEX") %>% 
   unnest(cols = c(value)) %>% 
   
@@ -1443,6 +1482,7 @@ covertura.region %>%
   )  +
   facet_wrap(~DEPARTAMEN)
 
-# ggsave("rota_regiones.png", width = 18, height = 10)
+ cowplot::plot_grid(d,labels = c("D"))
+ ggsave("rota_regiones.png", width = 18, height = 10)
 ```
 
