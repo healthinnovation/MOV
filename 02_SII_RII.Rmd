@@ -1019,7 +1019,14 @@ df3<-
                   .f = ~gg(.x)))
 
 ```  
-  
+
+```{r}
+df3 %>% 
+  select(ANIO,ssirii_si,ssirii_no) %>%
+  gather(var,value,ssirii_si:ssirii_no) %>% 
+  unnest()
+```
+
 ### Graficos  
 ```{r}  
 edu_juntos_si<-
