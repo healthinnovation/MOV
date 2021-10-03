@@ -650,7 +650,7 @@ df4<-df3 %>%
   
   group_by(vacunatipo) %>% 
   
-  st_as_sf %>%
+  st_as_sf() %>%
   
   nest() %>% 
   
