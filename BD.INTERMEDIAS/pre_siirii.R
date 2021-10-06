@@ -5,16 +5,10 @@ library(spdep)
   
   select(ANIO,ssirii) %>% 
   unnest(cols = c(ssirii)) %>%
-  #filter(ANIO == 2010 & vacunatipo == "PTV") %>%  
-  
   left_join(region_shape, by = "DEPARTAMEN") %>% 
-  
   group_by(ANIO,vacunatipo) %>%
-  
   st_as_sf() %>% 
-  
   nest() %>% 
-    
     mutate(
       nb= map(.x = data,
                .f = ~poly2nb(.x, queen = T)),
@@ -37,6 +31,7 @@ library(spdep)
                         .f = ~.x$p.value)
     )
  
+ 
 data %>% 
   select(ANIO,vacunatipo,moran.t,moran.p) %>% 
   mutate(
@@ -45,14 +40,17 @@ data %>%
 
   ggplot(aes(x = as.factor(ANIO), y = vacunatipo, fill = moran.t, alpha = alpha))+
   geom_tile()+
-  scale_x_discrete(position = "top") +
-  scale_fill_gradient(high = "#88A5B4")+
-  geom_text(aes(label = formatC(round(moran.t, 2), format = "f", digits = 2)))+
+  #scale_x_discrete(position = "top") +
+  scale_fill_gradient(high = "#44525A", low ="#ABC0CA", limits = c(0.10,0.40))+
+  geom_text(aes(label = formatC(round(moran.t, 2), format = "f", digits = 2)), size = 3.5)+
   labs(x = "Years", y = NULL) +
-  guides(alpha = "none")+
+  guides(alpha = "none",
+         fill = "none")+
   theme_minimal()+
   theme(
-    panel.grid = element_blank()
+    panel.grid = element_blank(),
+    axis.title = element_text(size = 10, face = "bold"),
+    axis.text = element_text(size = 9, face = "bold")
   )
   
 

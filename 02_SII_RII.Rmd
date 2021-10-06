@@ -167,6 +167,12 @@ df3<-
   ) 
 
 
+
+```
+
+## Graficos
+
+```{r}
 # SII y RII por año (2010 - 2020)
 
   ssi.edu<-
@@ -182,7 +188,7 @@ df3<-
   scale_color_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80")) +
  
     xlab("Years")+
-    ylab("Value")+
+    ylab("SII")+
     theme(
     axis.title = element_text(face ="bold", size = 11),
     legend.text = element_text(size = 8, face = "bold"),
@@ -196,7 +202,6 @@ df3<-
     strip.text = element_text(face = "bold", size = 9)
   )
   
-  #ggsave("SII_RII_education.png",width = 18, height = 5)
 
 #########
 
@@ -205,39 +210,48 @@ temp<-df3 %>%
   select(ANIO,hr) %>% 
   unnest(cols = c(hr)) %>% 
   as.data.frame() %>% 
-  group_by(as.factor(ANIO)) %>% 
+  group_by(as.factor(ANIO))
+  
+  
+  
+temp$derecha <- cumsum(temp$total) + 5*c(0:(nrow(temp)-1))
+  
+temp2<-
+  temp %>% 
+    mutate(
+    izq = derecha - total,
+    medio = (derecha + izq)/2
+    ) %>% 
+  
   nest() %>% 
+  
   mutate(grafico = map(.x = data,
-                       .f = ~ggplot(data = .x, aes(x = EDU_MADRE, y = tasa, fill = as.factor(ANIO), group = as.factor(ANIO)))+
-  geom_col(fill = "#AA5674")+
-  geom_point()+
-  geom_smooth(method = "lm",se = F)+
-    xlab("Maternal education") +
-    ylab("Rate")+
-    scale_x_discrete(labels = c("NE","PS","HS","SE"))+
-    theme(
-    axis.title = element_text(face ="bold", size = 8),
-    legend.text = element_text(size = 9, face = "bold"),
-    axis.text = element_text(face = "bold"),
-    axis.text.x = element_text( size = 8),
-    legend.position = "top",
-    legend.title = element_blank(),
-    axis.line = element_line(colour = "black", size = 1),
-    panel.background = element_blank(),
-    strip.background = element_blank(),
-    strip.text = element_text(face = "bold", size = 8)) +
-  facet_wrap(~vacunatipo, scales = "free")))
+                       .f = ~ggplot(data = .x,aes(xmin = izq, xmax = derecha, 
+                                                   ymax = tasa, ymin = 0, 
+                                                   fill = as.factor(ANIO),
+                                                   group = as.factor(ANIO)))+
+                         geom_rect(fill = "#AA5674", col = "black")+
+                         geom_point(aes(x = medio, y = tasa))+
+                         geom_smooth(aes(x = medio, y = tasa), method = "lm", se = F) +
+                         xlab("Income quintile (1st - 5th)") +
+                         ylab("Rate")+
+                         theme(
+                           axis.title = element_text(face ="bold", size = 8),
+                           legend.text = element_text(size = 9, face = "bold"),
+                           axis.text = element_text(face = "bold"),
+                           axis.text.x = element_blank(),
+                           legend.position = "top",
+                           legend.title = element_blank(),
+                           axis.line = element_line(colour = "black", size = 1),
+                           panel.background = element_blank(),
+                           strip.background = element_blank(),
+                           strip.text = element_text(face = "bold", size = 8)) +
+                         facet_wrap(~vacunatipo, scales = "free")))
 
 
-cowplot::plot_grid(plotlist = temp$grafico)
+cowplot::plot_grid(plotlist = temp2$grafico)
 
 ggsave("cols_slope_education.png", width = 13, height = 9)
-
-```
-
-
-```{r}
-
 ```
 
 ## INDICE RIQUEZA
@@ -356,6 +370,11 @@ df3<-
   ) 
 
 
+```
+
+## Graficos
+
+```{r}
 # SII y RII por año (2010 - 2020)
 
 ssi.ir<-
@@ -371,7 +390,7 @@ ssi.ir<-
   scale_color_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80")) +
   
     xlab("Years")+
-    ylab("Value")+
+    ylab("SII")+
     theme(
     axis.title = element_text(face ="bold", size = 11),
     legend.text = element_text(size = 8, face = "bold"),
@@ -394,53 +413,52 @@ temp<-df3 %>%
   select(ANIO,hr) %>% 
   unnest(cols = c(hr)) %>% 
   as.data.frame() %>% 
-  group_by(as.factor(ANIO)) %>% 
+  group_by(as.factor(ANIO))
+
+
+temp$derecha <- cumsum(temp$total) + 5*c(0:(nrow(temp)-1))
+  
+temp2<-
+  temp %>% 
+    mutate(
+    izq = derecha - total,
+    medio = (derecha + izq)/2
+    ) %>% 
+  
   nest() %>% 
+  
   mutate(grafico = map(.x = data,
-                       .f = ~ggplot(data = .x, aes(x = INDICERIQUEZA, y = tasa, fill = as.factor(ANIO), group = as.factor(ANIO)))+
-  geom_col(fill = "#AA5674")+
-  geom_point()+
-  geom_smooth(method = "lm",se = F)+
-    xlab("Poverty quintile") +
-    ylab("Rate")+
-    scale_x_discrete(labels = c("1st","2nd","3rd","4th","5th"))+
-    theme(
-    axis.title = element_text(face ="bold", size = 8),
-    legend.text = element_text(size = 9, face = "bold"),
-    axis.text = element_text(face = "bold"),
-    axis.text.x = element_text( size = 8),
-    legend.position = "top",
-    legend.title = element_blank(),
-    axis.line = element_line(colour = "black", size = 1),
-    panel.background = element_blank(),
-    strip.background = element_blank(),
-    strip.text = element_text(face = "bold", size = 8)) +
-  facet_wrap(~vacunatipo, scales = "free")))
+                       .f = ~ggplot(data = .x,aes(xmin = izq, xmax = derecha, 
+                                                   ymax = tasa, ymin = 0, 
+                                                   fill = as.factor(ANIO),
+                                                   group = as.factor(ANIO)))+
+                         geom_rect(fill = "#AA5674", col = "black")+
+                         geom_point(aes(x = medio, y = tasa))+
+                         geom_smooth(aes(x = medio, y = tasa), method = "lm", se = F) +
+                         xlab("Income quintile (1st - 5th)") +
+                         ylab("Rate")+
+                         theme(
+                           axis.title = element_text(face ="bold", size = 8),
+                           legend.text = element_text(size = 9, face = "bold"),
+                           axis.text = element_text(face = "bold"),
+                           axis.text.x = element_blank(),
+                           legend.position = "top",
+                           legend.title = element_blank(),
+                           axis.line = element_line(colour = "black", size = 1),
+                           panel.background = element_blank(),
+                           strip.background = element_blank(),
+                           strip.text = element_text(face = "bold", size = 8)) +
+                         facet_wrap(~vacunatipo, scales = "free")))
 
 
-cowplot::plot_grid(plotlist = temp$grafico)
+cowplot::plot_grid(plotlist = temp2$grafico)
 
 ggsave("cols_slope_RIQ.png", width = 13, height = 9)
-
-
 ```
 
+# EVENTO POR REGION
 
-```{r}
-legend <- get_legend(ssi.edu)
-ssi.edu<- ssi.edu + theme(legend.position = "none")
-ssi.ir<- ssi.ir + theme(legend.position = "none")
-
-grafico3<-plot_grid(ssi.edu,ssi.ir,  labels = c("A","B"), nrow = 1)
-
-cowplot::plot_grid(grafico3,legend, ncol = 1, rel_heights = c(1,0.1))
-
-ggsave("Fig4.png", width = 12, height = 6)
-```
-
-
-## EVENTO POR REGION
-
+### IR
 
 ```{r}
 df3<-
@@ -552,50 +570,13 @@ df3<-
     
   )
 
+
+```
+
+#### Graficos - IR
+
+```{r}
 ################
-
-df3 %>% select(ANIO,ssirii) %>% 
-  unnest(cols = c(ssirii)) %>% 
-  as.data.frame() %>% 
-  ungroup() %>% 
-  
-  pivot_longer(cols = c(rii,sii), names_to = "index") %>% 
-  
-  mutate(
-    line = ifelse(index=="rii",1,0)
-  ) %>% 
-  
-  filter(index == "sii") %>% 
-  
-   ggplot() +
-  geom_line(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo), size  = 1) +
-  #geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
-  geom_hline(aes(yintercept = line), linetype = "dashed") +
-  
-  scale_color_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80")) +
-  facet_wrap(~index, scales = "free", labeller = labeller(index = c("rii" = "RII",
-                                                                    "ssi" = "SII"))) +
-    xlab("Years")+
-    ylab("Value")+
-    #theme_minimal()+
-    theme(
-    axis.title = element_text(face ="bold", size = 11),
-    legend.text = element_text(size = 8, face = "bold"),
-    axis.text = element_text(face = "bold", family = "Candara"),
-    axis.text.x = element_text( size = 9),
-    legend.position = "top",
-    legend.title = element_blank(),
-    axis.line = element_line(colour = "black", size = 1),
-    panel.background = element_blank(),
-    strip.background = element_blank(),
-    strip.text = element_text(face = "bold")
-  ) + 
-  
-  facet_wrap(~DEPARTAMEN, scales = "free")
-
-ggsave("Fig5.png", width = 25, height = 14)
-
-##################
 
 # df3 %>% select(ANIO,ssirii) %>% 
 #   unnest(cols = c(ssirii)) %>% 
@@ -612,7 +593,7 @@ ggsave("Fig5.png", width = 25, height = 14)
 #   
 #    ggplot() +
 #   geom_line(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo), size  = 1) +
-#   geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
+#   #geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
 #   geom_hline(aes(yintercept = line), linetype = "dashed") +
 #   
 #   scale_color_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80")) +
@@ -632,11 +613,11 @@ ggsave("Fig5.png", width = 25, height = 14)
 #     panel.background = element_blank(),
 #     strip.background = element_blank(),
 #     strip.text = element_text(face = "bold")
-#   ) +
+#   ) + 
 #   
 #   facet_wrap(~DEPARTAMEN, scales = "free")
-
-#ggsave("test.png", width = 22, height = 11)
+# 
+# ggsave("Fig5.png", width = 25, height = 14)
 
 
 #####################
@@ -702,10 +683,71 @@ plot_grid(g1,g2,g3,g4,legend, ncol = 1, labels = c("A","B","C","D"), rel_heights
 
 ggsave("Fig6.png",width = 10,height = 15)
 
-
 ```
 
+#### Moran's I - IR
 
+```{r}
+library(spdep)
+
+ data<-
+  df3 %>% 
+  
+  select(ANIO,ssirii) %>% 
+  unnest(cols = c(ssirii)) %>%
+  left_join(region_shape, by = "DEPARTAMEN") %>% 
+  group_by(ANIO,vacunatipo) %>%
+  st_as_sf() %>% 
+  nest() %>% 
+    mutate(
+      nb= map(.x = data,
+               .f = ~poly2nb(.x, queen = T)),
+      
+      lw = map(.x = nb,
+               .f = ~nb2listw(.x, style = "W", zero.policy = T)),
+      
+      
+      moran = map2(.x = data, .y = lw,
+                     .f = ~moran.test(.x$sii,.y,alternative = "greater")),
+      
+      moran.mc = map2(.x = data, .y = lw,
+                      .f = ~moran.mc(.x$sii,.y, nsim = 9999, alternative = "greater")),
+      
+      
+      moran.t = map_dbl(.x = moran,
+                        .f = ~.x$estimate[[1]]),
+      
+      moran.p = map_dbl(.x = moran,
+                        .f = ~.x$p.value)
+    )
+ 
+ 
+ moran.ir<-
+   data %>% 
+  select(ANIO,vacunatipo,moran.t,moran.p) %>% 
+  mutate(
+    alpha = ifelse(moran.p>0.05,0.2,1)
+  ) %>% 
+
+  ggplot(aes(x = as.factor(ANIO), y = vacunatipo, fill = moran.t, alpha = alpha))+
+  geom_tile()+
+  #scale_x_discrete(position = "top") +
+  scale_fill_gradient(high = "#44525A", low ="#ABC0CA", limits = c(0.10,0.40))+
+  geom_text(aes(label = formatC(round(moran.t, 2), format = "f", digits = 2)), size = 3.5)+
+  scale_x_discrete(position = "top") +
+  labs(x = "Moran's I estimate", y = NULL) +
+  guides(alpha = "none",
+         fill = "none")+
+  theme_minimal()+
+  theme(
+    panel.grid = element_blank(),
+    axis.title.x = element_text(size = 10, face = "bold"),
+    axis.text.y = element_text(size = 8, face = "bold"),
+    axis.text.x = element_blank()
+  )
+```
+
+### ME
 
 ```{r}
 df3<-
@@ -817,7 +859,11 @@ df3<-
     
   )
 
+```
 
+#### Grafico - ME
+
+```{r}
 df4<-df3 %>% 
   select(ANIO,ssirii) %>% 
   unnest(cols = c(ssirii)) %>%
@@ -880,6 +926,82 @@ plot_grid(g1,g2,g3,g4,legend, ncol = 1, labels = c("A","B","C","D"), rel_heights
 ggsave("Fig7.png",width = 10,height = 15)
 ```
 
+#### Moran's I - ME
+
+```{r}
+data<-
+  df3 %>% 
+  
+  select(ANIO,ssirii) %>% 
+  unnest(cols = c(ssirii)) %>%
+  left_join(region_shape, by = "DEPARTAMEN") %>% 
+  group_by(ANIO,vacunatipo) %>%
+  st_as_sf() %>% 
+  nest() %>% 
+    mutate(
+      nb= map(.x = data,
+               .f = ~poly2nb(.x, queen = T)),
+      
+      lw = map(.x = nb,
+               .f = ~nb2listw(.x, style = "W", zero.policy = T)),
+      
+      
+      moran = map2(.x = data, .y = lw,
+                     .f = ~moran.test(.x$sii,.y,alternative = "greater")),
+      
+      moran.mc = map2(.x = data, .y = lw,
+                      .f = ~moran.mc(.x$sii,.y, nsim = 9999, alternative = "greater")),
+      
+      
+      moran.t = map_dbl(.x = moran,
+                        .f = ~.x$estimate[[1]]),
+      
+      moran.p = map_dbl(.x = moran,
+                        .f = ~.x$p.value)
+    )
+ 
+ 
+  moran.me<-
+   data %>% 
+  select(ANIO,vacunatipo,moran.t,moran.p) %>% 
+  mutate(
+    alpha = ifelse(moran.p>0.05,0.2,1)
+  ) %>% 
+
+  ggplot(aes(x = as.factor(ANIO), y = vacunatipo, fill = moran.t, alpha = alpha))+
+  geom_tile()+
+  #scale_x_discrete(position = "top") +
+  scale_fill_gradient(high = "#44525A", low ="#ABC0CA", limits = c(0.10,0.40))+
+  geom_text(aes(label = formatC(round(moran.t, 2), format = "f", digits = 2)), size = 3.5)+
+  scale_x_discrete(position = "top") +
+  labs(x = "Moran's I estimate", y = NULL) +
+  guides(alpha = "none",
+         fill = "none")+
+  theme_minimal()+
+  theme(
+    panel.grid = element_blank(),
+    axis.title.x = element_text(size = 10, face = "bold"),
+    axis.text.y = element_text(size = 8, face = "bold"),
+    axis.text.x = element_blank()
+  )
+```
+
+###Grafico Moran's I + SII
+
+```{r}
+
+legend <- get_legend(ssi.edu)
+
+ssi.edu<- ssi.edu + theme(legend.position = "none")
+ssi.ir<- ssi.ir + theme(legend.position = "none")
+
+graficoa<-plot_grid(moran.me,ssi.edu, ncol = 1, rel_heights = c(.4,1))
+graficob<-plot_grid(moran.ir,ssi.ir, ncol = 1, rel_heights = c(.4,1))
+
+cowplot::plot_grid(graficoa,graficob,legend, ncol = 1, labels = c("A","B"), rel_heights = c(1,1,0.1))
+
+ggsave("Fig4.png", width = 8, height = 13)
+```
 
 # EVENTO: ANALISIS POR PROGRAMA JUNTOS
 
@@ -1018,11 +1140,11 @@ df3<-
     graf_no = map(.x = hr_no,
                   .f = ~gg(.x)))
 
-```  
+```
 
+### Graficos
 
-### Graficos  
-```{r}  
+```{r}
 edu<-df3 %>% 
   select(ANIO,ssirii_si,ssirii_no) %>%
   gather(var,value,ssirii_si:ssirii_no) %>% 
@@ -1102,8 +1224,7 @@ cowplot::plot_grid(plotlist = temp$grafico)
 
 ```
 
-
-## INDICE DE RIQUEZA 
+## INDICE DE RIQUEZA
 
 ```{r}
 df3<-
@@ -1227,10 +1348,11 @@ df3<-
                   .f = ~gg(.x)))
   
 
-```  
+```
 
-### Graficos  
-```{r}  
+### Graficos
+
+```{r}
 
 riq<-df3 %>% 
   select(ANIO,ssirii_si,ssirii_no) %>%
@@ -1310,7 +1432,6 @@ cowplot::plot_grid(plotlist = temp$grafico)
 ggsave("IR_JUNTOS_tasas_no.png",width = 13, height = 9)
 ```
 
-
 ```{r}
 juntos<-
   bind_rows(riq,edu) %>% 
@@ -1342,7 +1463,7 @@ juntos<-
 
 ```
 
-#EVENTO: ANALISIS POR TIPO DE VIVIENDA
+\#EVENTO: ANALISIS POR TIPO DE VIVIENDA
 
 ## EDUCACION DE LA MADRE
 
@@ -1480,8 +1601,9 @@ df3<-
 
 ```
 
-### Graficos  
-```{r} 
+### Graficos
+
+```{r}
 
 edu<-df3 %>% 
   select(ANIO,ssirii_si,ssirii_no) %>%
@@ -1561,9 +1683,7 @@ cowplot::plot_grid(plotlist = temp$grafico)
 ggsave("EDU_vivenda_tasas_no.png",width = 13, height = 9)
 ```
 
-
-
-## INDICE RIQUEZA 
+## INDICE RIQUEZA
 
 ```{r}
 df3<-
@@ -1687,8 +1807,9 @@ df3<-
 
 ```
 
-### Graficos  
-```{r} 
+### Graficos
+
+```{r}
 
 riq<-df3 %>% 
   select(ANIO,ssirii_si,ssirii_no) %>%
@@ -1768,7 +1889,6 @@ cowplot::plot_grid(plotlist = temp$grafico)
 ggsave("IR_vivienda_tasas_no.png",width = 13, height = 9)
 ```
 
-
 ```{r}
 tipovivienda<-
   bind_rows(riq,edu) %>% 
@@ -1799,8 +1919,7 @@ tipovivienda<-
   )
 ```
 
-
-#EVENTO: ANALISIS POR TIPO DE SEGURO
+\#EVENTO: ANALISIS POR TIPO DE SEGURO
 
 ```{r}
 MOV_GENERAL <- read.csv("./BD.INTERMEDIAS/mov_general.csv")
@@ -1824,7 +1943,6 @@ df2<-MOV_GENERAL %>%
 options(survey.lonely.psu="remove")
 
 ```
-
 
 ## EDUCACION DE LA MADRE
 
@@ -1963,9 +2081,9 @@ df3<-
 
 ```
 
+### Graficos
 
-### Graficos  
-```{r} 
+```{r}
 
 edu<-df3 %>% 
   select(ANIO,ssirii_si,ssirii_no) %>%
@@ -2044,7 +2162,6 @@ cowplot::plot_grid(plotlist = temp$grafico)
 
 #ggsave("EDU_seguro_tasas_no.png",width = 13, height = 9)
 ```
-
 
 ## INDICE RIQUEZA
 
@@ -2170,9 +2287,9 @@ df3<-
 
 ```
 
+### Graficos
 
-### Graficos  
-```{r} 
+```{r}
 
 riq<-df3 %>% 
   select(ANIO,ssirii_si,ssirii_no) %>%
@@ -2223,10 +2340,13 @@ temp<-df3 %>%
   select(ANIO,hr_no) %>% 
   unnest(cols = c(hr_no)) %>% 
   as.data.frame() %>% 
-  group_by(as.factor(ANIO)) %>% 
+  group_by(as.factor(ANIO))
+
+temp$derecha <- cumsum(temp$total) + 10*c(0:(nrow(temp)-1))
   
-  mutate(
-    derecha = cumsum(total) + 10*c(0:(nrow(t)-1)),
+temp2<-
+  temp %>% 
+    mutate(
     izq = derecha - total,
     medio = (derecha + izq)/2
     ) %>% 
@@ -2262,8 +2382,10 @@ cowplot::plot_grid(plotlist = temp$grafico)
 ggsave("IR_seguro_tasas_no.png",width = 13, height = 9)
 
 
-```
 
+
+
+```
 
 ```{r}
 tipocred<-
@@ -2295,8 +2417,8 @@ tipocred<-
   )
 ```
 
+# Panel - SII
 
-# Panel - SII 
 ```{r}
 
 p1<- plot_grid(juntos + theme(legend.position = "none"))
@@ -2314,7 +2436,6 @@ plot_grid(p1,p2,p3,legend, cols = 1,labels = c("A","B","C"), rel_heights = c(1,1
 ggsave("panel_sii.png",height = 15, width = 10)
 
 ```
-
 
 # OTROS
 
@@ -2460,8 +2581,6 @@ df3$hr[[1]]
   
 ```
 
-
-
 ## CRED LUGAR
 
 ```{r}
@@ -2593,7 +2712,6 @@ ggsave("qq.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15
 
   
 ```
-
 
 ## EDAD MADRE
 
