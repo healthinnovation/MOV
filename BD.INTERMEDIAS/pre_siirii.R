@@ -1,61 +1,178 @@
-library(spdep)
-
- data<-
-  df3 %>% 
-  
-  select(ANIO,ssirii) %>% 
-  unnest(cols = c(ssirii)) %>%
-  left_join(region_shape, by = "DEPARTAMEN") %>% 
-  group_by(ANIO,vacunatipo) %>%
-  st_as_sf() %>% 
-  nest() %>% 
-    mutate(
-      nb= map(.x = data,
-               .f = ~poly2nb(.x, queen = T)),
-      
-      lw = map(.x = nb,
-               .f = ~nb2listw(.x, style = "W", zero.policy = T)),
-      
-      
-      moran = map2(.x = data, .y = lw,
-                     .f = ~moran.test(.x$sii,.y,alternative = "greater")),
-      
-      moran.mc = map2(.x = data, .y = lw,
-                      .f = ~moran.mc(.x$sii,.y, nsim = 9999, alternative = "greater")),
-      
-      
-      moran.t = map_dbl(.x = moran,
-                        .f = ~.x$estimate[[1]]),
-      
-      moran.p = map_dbl(.x = moran,
-                        .f = ~.x$p.value)
-    )
- 
- 
-data %>% 
-  select(ANIO,vacunatipo,moran.t,moran.p) %>% 
+t<-
+  df2 %>% 
   mutate(
-    alpha = ifelse(moran.p>0.05,0.2,1)
-  ) %>% 
+    
+    ptv = map(.x =df,
+              .f = ~svyby(~MOV_PTV_e1, by=~INDICERIQUEZA, design =.x, FUN=svytotal, na.rm = T) %>% 
+                
+                mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV",
+                       orden =as.numeric(as.factor(INDICERIQUEZA)),
+                       
+                       vacuna_ll = MOV_PTV_e1 - (1.94 * se),
+                       vacuna_hl = MOV_PTV_e1 + (1.94 * se)) %>% 
+                
+                select(-MOV_PTV_e1) %>% 
+                
+                left_join(
+                  
+                  svytotal(~INDICERIQUEZA, design = .x, na.rm = T) %>%
+                    
+                    data.frame() %>%
+                    
+                    rownames_to_column("INDICERIQUEZA") %>%
+                    
+                    mutate(
+                      INDICERIQUEZA = substring(INDICERIQUEZA,14),
+                      total_ll = total - (1.94 * SE),
+                      total_hl = total + (1.94 * SE))) %>%
+                
+                select(INDICERIQUEZA,orden,total,vacuna,vacunatipo,se,-`SE`)),
+    
+    
+    
+    neumo = map(.x =df,
+                .f = ~svyby(~MOV_NEUMO_e1, by=~INDICERIQUEZA, design =.x, FUN=svytotal, na.rm = T) %>% 
+                  
+                  mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "PTV",
+                         orden =as.numeric(as.factor(INDICERIQUEZA)),
+                         
+                         vacuna_ll = MOV_NEUMO_e1 - (1.94 * se),
+                         vacuna_hl = MOV_NEUMO_e1 + (1.94 * se)) %>% 
+                  
+                  select(-MOV_NEUMO_e1) %>% 
+                  
+                  left_join(
+                    
+                    svytotal(~INDICERIQUEZA, design = .x, na.rm = T) %>%
+                      
+                      data.frame() %>%
+                      
+                      rownames_to_column("INDICERIQUEZA") %>%
+                      
+                      mutate(
+                        INDICERIQUEZA = substring(INDICERIQUEZA,14),
+                        total_ll = total - (1.94 * SE),
+                        total_hl = total + (1.94 * SE))) %>%
+                  
+                  select(INDICERIQUEZA,orden,total,vacuna,vacunatipo,se,-`SE`)),
+    
+    
+    influ = map(.x =df,
+                .f = ~svyby(~MOV_INFLU_e1, by=~INDICERIQUEZA, design =.x, FUN=svytotal, na.rm = T) %>% 
+                  
+                  mutate(vacuna = MOV_INFLU_e1,vacunatipo = "PTV",
+                         orden =as.numeric(as.factor(INDICERIQUEZA)),
+                         
+                         vacuna_ll = MOV_INFLU_e1 - (1.94 * se),
+                         vacuna_hl = MOV_INFLU_e1 + (1.94 * se)) %>% 
+                  
+                  select(-MOV_INFLU_e1) %>% 
+                  
+                  left_join(
+                    
+                    svytotal(~INDICERIQUEZA, design = .x, na.rm = T) %>%
+                      
+                      data.frame() %>%
+                      
+                      rownames_to_column("INDICERIQUEZA") %>%
+                      
+                      mutate(
+                        INDICERIQUEZA = substring(INDICERIQUEZA,14),
+                        total_ll = total - (1.94 * SE),
+                        total_hl = total + (1.94 * SE))) %>%
+                  
+                  select(INDICERIQUEZA,orden,total,vacuna,vacunatipo,se,-`SE`)),
+    
+    
+    rota  = map(.x =df,
+                .f = ~svyby(~MOV_ROTA_e1, by=~INDICERIQUEZA, design =.x, FUN=svytotal, na.rm = T) %>% 
+                  
+                  mutate(vacuna = MOV_ROTA_e1,vacunatipo = "PTV",
+                         orden =as.numeric(as.factor(INDICERIQUEZA)),
+                         
+                         vacuna_ll = MOV_ROTA_e1 - (1.94 * se),
+                         vacuna_hl = MOV_ROTA_e1 + (1.94 * se)) %>% 
+                  
+                  select(-MOV_ROTA_e1) %>% 
+                  
+                  left_join(
+                    
+                    svytotal(~INDICERIQUEZA, design = .x, na.rm = T) %>%
+                      
+                      data.frame() %>%
+                      
+                      rownames_to_column("INDICERIQUEZA") %>%
+                      
+                      mutate(
+                        INDICERIQUEZA = substring(INDICERIQUEZA,14),
+                        total_ll = total - (1.94 * SE),
+                        total_hl = total + (1.94 * SE))) %>%
+                  
+                  select(INDICERIQUEZA,orden,total,vacuna,vacunatipo,se,-`SE`))) %>% 
+  
+  
+  mutate(
+    
+    total = map(.x = ptv,
+                .f = ~bind_rows(.x,neumo,influ,rota)),
+    
+    # hr_l = map(.x = total,
+    #          .f = ~h_prop(.x, level = 1)),
+    # 
+    # hr_h = map(.x = total,
+    #          .f = ~h_prop(.x, level = 2)),
+    
+    hr = map(.x = total,
+             .f = ~h_prop(.x, 3)),
+    
+    
+    ssirii = map(.x = total,
+                 .f = ~sii_rii(.x, level = 3)),
+    
+    ssirii_l = map(.x = total,
+                   .f = ~sii_rii(.x, level = 1)),
+    
+    ssirii_h = map(.x = total,
+                   .f = ~sii_rii(.x, level = 2)),
+    
+    graf = map(.x = hr,
+               .f = ~gg(.x))
+    
+  ) 
 
-  ggplot(aes(x = as.factor(ANIO), y = vacunatipo, fill = moran.t, alpha = alpha))+
-  geom_tile()+
-  #scale_x_discrete(position = "top") +
-  scale_fill_gradient(high = "#44525A", low ="#ABC0CA", limits = c(0.10,0.40))+
-  geom_text(aes(label = formatC(round(moran.t, 2), format = "f", digits = 2)), size = 3.5)+
-  labs(x = "Years", y = NULL) +
-  guides(alpha = "none",
-         fill = "none")+
-  theme_minimal()+
+
+
+  
+
+t %>% select(ANIO,ssirii,ssirii_l,ssirii_h) %>% 
+  unnest() %>% 
+  as.data.frame() %>% 
+  ungroup() %>%
+  
+  ggplot(aes(x = as.factor(ANIO), y = ssi, group = vacunatipo)) +
+  
+  geom_line(aes(color = vacunatipo), size = 1.2) +
+  geom_ribbon(aes(ymin = ssi_l, ymax = ssi_h, fill = vacunatipo), alpha = 0.1)+
+  geom_hline(aes(yintercept = 0), linetype = "dashed") + 
+  
+  #scale_color_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80")) +
+  scale_color_npg()+
+  scale_fill_npg()+
+  
+  xlab("Years")+
+  ylab("SII")+
+  scale_x_discrete(expand = c(0, 0.15))+
   theme(
-    panel.grid = element_blank(),
-    axis.title = element_text(size = 10, face = "bold"),
-    axis.text = element_text(size = 9, face = "bold")
+    axis.title = element_text(face ="bold", size = 11),
+    legend.text = element_text(size = 8, face = "bold"),
+    axis.text = element_text(face = "bold"),
+    axis.text.x = element_text( size = 8),
+    legend.position = "top",
+    legend.title = element_blank(),
+    axis.line = element_line(colour = "black", size = 1),
+    panel.background = element_blank(),
+    strip.background = element_blank(),
+    strip.text = element_text(face = "bold", size = 9)
   )
-  
 
-   
-  
- 
-
-
+  ggsave("ssi.png",width = 10, height = 6)

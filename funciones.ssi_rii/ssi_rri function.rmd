@@ -137,10 +137,65 @@ prep.data <-function(MOV2020){ MOV2020 %>%
 
 ```{r}
 h_prop<-
-   function(data) {
+   function(data, level = NULL) {
+      
+      if (level == 1) {
+      
+         data<-
+            data %>% 
+   group_by(vacunatipo) %>%  
+    
+    mutate(
+       tasa = (vacuna_ll/total_ll)*10000
+    ) %>% 
    
- data<-
-    data %>% 
+    # ordenar de - a +
+   arrange(orden,.by_group = T) %>% 
+   
+     # Calculo de hr
+   mutate(pop= vacuna_ll/sum(vacuna_ll),
+          #tasa = (vacuna/total)*10000,
+          popr = cumsum(pop)/sum(pop),
+          pop.popr = popr - pop,
+          hr2 = round((pop.popr + popr)/2,3)*100
+          ) %>% 
+   
+   select(-pop,-popr,-pop.popr,tasa)
+ 
+ 
+ data   
+         
+      }else{
+         if (level == 2) {
+         
+          data<- 
+             data %>% 
+   group_by(vacunatipo) %>%  
+    
+    mutate(
+       tasa = (vacuna_hl/total_hl)*10000
+    ) %>% 
+   
+    # ordenar de - a +
+   arrange(orden,.by_group = T) %>% 
+   
+     # Calculo de hr
+   mutate(pop= vacuna_hl/sum(vacuna_hl),
+          #tasa = (vacuna/total)*10000,
+          popr = cumsum(pop)/sum(pop),
+          pop.popr = popr - pop,
+          hr2 = round((pop.popr + popr)/2,3)*100
+          ) %>% 
+   
+   select(-pop,-popr,-pop.popr)
+ 
+ 
+ data 
+            
+         }else{
+           
+   data<-      
+      data %>% 
    group_by(vacunatipo) %>%  
     
     mutate(
@@ -162,29 +217,32 @@ h_prop<-
  
  
  data 
+         }
+      }
 }
 ```
 
 
 ```{r}
-sii_rii<-function(data) {
-   
+sii_rii<-function(data,level=NULL) {
    
    bd <- data.frame(hr2 = c(0,100))
- 
- data<-
+   
+   if (level == 1) {
+      
+     data<-
    data %>% 
    group_by(vacunatipo) %>%  
     
     mutate(
-       tasa = (vacuna/total)*10000
+       tasa = (vacuna_ll/total_ll)*10000
     ) %>% 
    
     # ordenar de - a +
    #arrange(orden,.by_group = T) %>% 
    
      # Calculo de hr
-   mutate(pop= vacuna/sum(vacuna),
+   mutate(pop= vacuna_ll/sum(vacuna_ll),
           #tasa = (vacuna/total)*10000,
           popr = cumsum(pop)/sum(pop),
           pop.popr = popr - pop,
@@ -219,16 +277,180 @@ sii_rii<-function(data) {
    slice(2) %>%
    
     # rri f(1)/f(0)
-   mutate(rii = map_dbl(.x = modelo,
+   mutate(rii_l = map_dbl(.x = modelo,
                 .f =~predict(.x,
                              newdata = bd %>% filter(hr2 == 100))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
           
-          ssi = estimate) %>% 
+          ssi_l = estimate) %>% 
    
-   select(vacunatipo,term,ssi,rii)
+   select(vacunatipo,term,ssi_l,rii_l)
  
  data
  
+   }else{
+      if (level == 2) {
+         
+         data<-
+   data %>% 
+   group_by(vacunatipo) %>%  
+    
+    mutate(
+       tasa = (vacuna_hl/total_hl)*10000
+    ) %>% 
+   
+    # ordenar de - a +
+   #arrange(orden,.by_group = T) %>% 
+   
+     # Calculo de hr
+   mutate(pop= vacuna_hl/sum(vacuna_hl),
+          #tasa = (vacuna/total)*10000,
+          popr = cumsum(pop)/sum(pop),
+          pop.popr = popr - pop,
+          hr2 = round((pop.popr + popr)/2,3)*100
+          ) %>% 
+   
+   select(-pop,-popr,-pop.popr) %>% 
+ 
+   
+   group_by(vacunatipo) %>% 
+   
+   nest() %>% 
+   
+   mutate(
+     
+      # lm para ssi 
+     modelo = map(.x = data, .f = ~lm(formula = tasa~hr2, data = .x)),
+     
+      # extraer beta
+     modelo2 = map(.x = modelo, 
+                   .f = ~tidy(lmtest::coeftest(.x, vcov = vcovHC, 
+                                               type = "HC2"), conf.int = T)),
+ 
+     ) %>% 
+   
+   ungroup() %>% 
+   
+   unnest(cols = c(modelo2)) %>% 
+   
+   group_by(vacunatipo) %>% 
+   
+   slice(2) %>%
+   
+    # rri f(1)/f(0)
+   mutate(rii_h = map_dbl(.x = modelo,
+                .f =~predict(.x,
+                             newdata = bd %>% filter(hr2 == 100))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
+          
+          ssi_h = estimate) %>% 
+   
+   select(vacunatipo,term,ssi_h,rii_h)
+ 
+ data
+      }else{
+         
+         data<-
+   data %>% 
+   group_by(vacunatipo) %>%  
+    
+    mutate(
+       tasa = (vacuna/total)*10000
+    ) %>% 
+   
+    # ordenar de - a +
+   #arrange(orden,.by_group = T) %>% 
+   
+     # Calculo de hr
+   mutate(pop= vacuna/sum(vacuna),
+          #tasa = (vacuna/total)*10000,
+          popr = cumsum(pop)/sum(pop),
+          pop.popr = popr - pop,
+          hr2 = round((pop.popr + popr)/2,3)*100
+          ) %>% 
+   
+   select(-pop,-popr,-pop.popr) %>% 
+ 
+   
+   group_by(vacunatipo) %>% 
+   
+   nest() %>% 
+   
+   mutate(
+     
+      # lm para ssi 
+     modelo = map(.x = data, 
+                  .f = ~estimatr::lm_robust(formula = tasa~hr2, data = .x, se_type = "stata")),
+     
+      # extraer beta
+     # modelo2 = map(.x = modelo, 
+     #               .f = ~tidy(lmtest::coeftest(.x, vcov = vcovHC, 
+     #                                           type = "HC2"), conf.int = T)),
+     
+     modelo2 = map(.x = modelo,
+                   .f = ~tidy(.x,conf.int = T))
+ 
+     ) %>% 
+   
+   ungroup() %>% 
+   
+   unnest(cols = c(modelo2)) %>% 
+   
+   group_by(vacunatipo) %>% 
+   
+   slice(2) %>%
+   
+    # rri f(1)/f(0)
+   mutate(
+      # rii = map_dbl(.x = modelo,
+      #           .f =~predict(.x,
+      #                        newdata = bd %>% filter(hr2 == 100))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
+          
+          ssi = estimate
+          ) 
+   
+   #select(vacunatipo,term,ssi,rii)
+ 
+ data
+      }
+   }
+ 
+}
+
+```
+
+
+
+
+#2. SII_RII MAPAS
+
+```{r}
+h_prop.map <-
+   function(data) {
+
+   data<-
+      data %>% 
+   group_by(DEPARTAMEN,vacunatipo) %>% 
+      mutate(
+         tasa = (vacuna/total)*10000 
+      ) %>% 
+   
+    # ordenar de - a +
+   arrange(orden,.by_group = T) %>% 
+   
+     # Calculo de hr
+   mutate(pop= vacuna/sum(vacuna),
+          
+          popr = cumsum(pop)/sum(pop),
+          pop.popr = popr - pop,
+          hr2 = round((pop.popr + popr)/2,3)*100
+          ) %>% 
+   
+   select(-pop,-popr,-pop.popr) %>% 
+ 
+   
+   group_by(DEPARTAMEN,vacunatipo) 
+   
+   data
+   
 }
 
 ```

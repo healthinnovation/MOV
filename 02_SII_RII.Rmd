@@ -13,6 +13,8 @@ library(sf)
 library(extrafont)
 library(patchwork)
 library(cowplot)
+library(ggsci)
+library(estimatr)
 
 region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 ```
@@ -53,9 +55,12 @@ df3<-
                        orden = case_when(EDU_MADRE == "sin educ" ~ 0,
                                          EDU_MADRE == "primaria" ~ 1,
                                          EDU_MADRE == "secundaria" ~ 2,
-                                         EDU_MADRE == "superior" ~ 3)) %>% 
+                                         EDU_MADRE == "superior" ~ 3),
+                       
+                       vacuna_ll = MOV_PTV_e1 - (1.96 * se),
+                       vacuna_hl = MOV_PTV_e1 + (1.96 * se)) %>% 
                 
-                select(-MOV_PTV_e1) %>% 
+                select(-MOV_PTV_e1,-se) %>% 
                 
                 left_join(
                   
@@ -66,9 +71,12 @@ df3<-
                     rownames_to_column("EDU_MADRE") %>%
                     
                     mutate(
-                      EDU_MADRE = substring(EDU_MADRE,10))) %>%
+                      EDU_MADRE = substring(EDU_MADRE,10),
+                      total_ll = total - (1.96 * SE),
+                      total_hl = total + (1.96 * SE))) %>%
                 
-                select(EDU_MADRE,orden,total,vacuna,vacunatipo,se,-`SE`)),
+                select(EDU_MADRE,orden,total,total_ll,total_hl,
+                       vacuna,vacuna_ll,vacuna_hl,vacunatipo)),
     
     
     
@@ -77,11 +85,14 @@ df3<-
                   
                   mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO",
                          orden = case_when(EDU_MADRE == "sin educ" ~ 0,
-                                         EDU_MADRE == "primaria" ~ 1,
-                                         EDU_MADRE == "secundaria" ~ 2,
-                                         EDU_MADRE == "superior" ~ 3)) %>% 
+                                           EDU_MADRE == "primaria" ~ 1,
+                                           EDU_MADRE == "secundaria" ~ 2,
+                                           EDU_MADRE == "superior" ~ 3),
+                         
+                         vacuna_ll = vacuna - (1.96 * se),
+                         vacuna_hl = vacuna + (1.96 * se)) %>% 
                   
-                  select(-MOV_NEUMO_e1) %>% 
+                  select(-MOV_NEUMO_e1,-se) %>% 
                   
                   left_join(
                     
@@ -92,9 +103,12 @@ df3<-
                       rownames_to_column("EDU_MADRE") %>%
                       
                       mutate(
-                        EDU_MADRE = substring(EDU_MADRE,10))) %>%
+                        EDU_MADRE = substring(EDU_MADRE,10),
+                        total_ll = total - (1.96 * SE),
+                        total_hl = total + (1.96 * SE))) %>%
                   
-                  select(EDU_MADRE,orden,total,vacuna,vacunatipo,se,-`SE`)),
+                  select(EDU_MADRE,orden,total,total_ll,total_hl,
+                         vacuna,vacuna_ll,vacuna_hl,vacunatipo)),
     
     
     influ = map(.x =df,
@@ -102,11 +116,14 @@ df3<-
                   
                   mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU",
                          orden = case_when(EDU_MADRE == "sin educ" ~ 0,
-                                         EDU_MADRE == "primaria" ~ 1,
-                                         EDU_MADRE == "secundaria" ~ 2,
-                                         EDU_MADRE == "superior" ~ 3)) %>% 
+                                           EDU_MADRE == "primaria" ~ 1,
+                                           EDU_MADRE == "secundaria" ~ 2,
+                                           EDU_MADRE == "superior" ~ 3),
+                         
+                         vacuna_ll = vacuna - (1.96 * se),
+                         vacuna_hl = vacuna + (1.96 * se)) %>% 
                   
-                  select(-MOV_INFLU_e1) %>% 
+                  select(-MOV_INFLU_e1,-se) %>% 
                   
                   left_join(
                     
@@ -117,9 +134,12 @@ df3<-
                       rownames_to_column("EDU_MADRE") %>%
                       
                       mutate(
-                        EDU_MADRE = substring(EDU_MADRE,10))) %>%
+                        EDU_MADRE = substring(EDU_MADRE,10),
+                        total_ll = total - (1.96 * SE),
+                        total_hl = total + (1.96 * SE))) %>%
                   
-                  select(EDU_MADRE,orden,total,vacuna,vacunatipo,se,-`SE`)),
+                  select(EDU_MADRE,orden,total,total_ll,total_hl,
+                         vacuna,vacuna_ll,vacuna_hl,vacunatipo)),
     
     
     rota  = map(.x =df,
@@ -127,47 +147,62 @@ df3<-
                   
                   mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA",
                          orden = case_when(EDU_MADRE == "sin educ" ~ 0,
-                                         EDU_MADRE == "primaria" ~ 1,
-                                         EDU_MADRE == "secundaria" ~ 2,
-                                         EDU_MADRE == "superior" ~ 3)) %>% 
+                                           EDU_MADRE == "primaria" ~ 1,
+                                           EDU_MADRE == "secundaria" ~ 2,
+                                           EDU_MADRE == "superior" ~ 3),
+                         
+                         vacuna_ll = vacuna - (1.96 * se),
+                         vacuna_hl = vacuna + (1.96 * se)) %>% 
                   
-                  select(-MOV_ROTA_e1) %>% 
+                  select(-MOV_ROTA_e1,-se) %>% 
                   
                   left_join(
                     
-                    svytotal(~EDU_MADRE, design =.x, na.rm = T) %>%
+                    svytotal(~EDU_MADRE, design = .x, na.rm = T) %>%
                       
                       data.frame() %>%
                       
                       rownames_to_column("EDU_MADRE") %>%
                       
                       mutate(
-                        EDU_MADRE = substring(EDU_MADRE,10))) %>%
+                        EDU_MADRE = substring(EDU_MADRE,10),
+                        total_ll = total - (1.96 * SE),
+                        total_hl = total + (1.96 * SE))) %>%
                   
-                  select(EDU_MADRE,orden,total,vacuna,vacunatipo,se,-`SE`))) %>% 
+                  select(EDU_MADRE,orden,total,total_ll,total_hl,
+                         vacuna,vacuna_ll,vacuna_hl,vacunatipo))) %>% 
   
   
   mutate(
     
-    pretotal1  = map2(.x = ptv, .y = neumo, .f = ~bind_rows(.x,.y)),
-    pretotal2  = map2(.x = influ, .y = rota, .f = ~bind_rows(.x,.y)),
+    total = map(.x = ptv,
+                .f = ~bind_rows(.x,neumo,influ,rota)),
     
-    total  = map2(.x = pretotal1, .y = pretotal2, .f = ~bind_rows(.x,.y)),
+    # hr_l = map(.x = total,
+    #          .f = ~h_prop(.x, level = 1)),
+    # 
+    # hr_h = map(.x = total,
+    #          .f = ~h_prop(.x, level = 2)),
     
     hr = map(.x = total,
-             .f = ~h_prop(.x)),
+             .f = ~h_prop(.x, 3)),
+    
     
     ssirii = map(.x = total,
-                 .f = ~sii_rii(.x)),
+                 .f = ~sii_rii(.x, level = 3)),
     
+    ssirii_l = map(.x = total,
+                  .f = ~sii_rii(.x, level = 1)),
     
+    ssirii_h = map(.x = total,
+                   .f = ~sii_rii(.x, level = 2)),
+  
     graf = map(.x = hr,
                .f = ~gg(.x))
     
-  ) 
+  )  
 
-
-
+df3$ssirii[[1]]
 ```
 
 ## Graficos
@@ -175,21 +210,26 @@ df3<-
 ```{r}
 # SII y RII por año (2010 - 2020)
 
-  ssi.edu<-
-    df3 %>% select(ANIO,ssirii) %>% 
-  unnest(cols = c(ssirii)) %>% 
-  as.data.frame() %>% 
-  ungroup() %>% 
+  #ssi.edu<-
+    df3 %>% select(ANIO,ssirii,ssirii_l,ssirii_h) %>% 
+  unnest() %>% 
+  as.data.frame() %>%
+  filter(vacunatipo =="PTV") %>% 
+  ungroup() %>%
   
-  ggplot() +
-  geom_line(aes(x = as.factor(ANIO), y = ssi, col = vacunatipo, group = vacunatipo), size = 1.3) +
-   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
-    
-  scale_color_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80")) +
- 
-    xlab("Years")+
-    ylab("SII")+
-    theme(
+  ggplot(aes(x = as.factor(ANIO), y = ssi, group = vacunatipo)) +
+  
+  geom_line(aes(color = vacunatipo), size = 1.2) +
+  geom_ribbon(aes(ymin = ssi_l, ymax = ssi_h, fill = vacunatipo), alpha = 0.1)+
+  geom_hline(aes(yintercept = 0), linetype = "dashed") + 
+  
+  scale_color_npg()+
+  scale_fill_npg()+
+  
+  xlab("Years")+
+  ylab("SII")+
+  scale_x_discrete(expand = c(0, 0.15))+
+  theme(
     axis.title = element_text(face ="bold", size = 11),
     legend.text = element_text(size = 8, face = "bold"),
     axis.text = element_text(face = "bold"),
@@ -735,7 +775,7 @@ library(spdep)
   scale_fill_gradient(high = "#44525A", low ="#ABC0CA", limits = c(0.10,0.40))+
   geom_text(aes(label = formatC(round(moran.t, 2), format = "f", digits = 2)), size = 3.5)+
   scale_x_discrete(position = "top") +
-  labs(x = "Moran's I estimate", y = NULL) +
+  labs(x = "", y = NULL) +
   guides(alpha = "none",
          fill = "none")+
   theme_minimal()+
@@ -974,7 +1014,7 @@ data<-
   scale_fill_gradient(high = "#44525A", low ="#ABC0CA", limits = c(0.10,0.40))+
   geom_text(aes(label = formatC(round(moran.t, 2), format = "f", digits = 2)), size = 3.5)+
   scale_x_discrete(position = "top") +
-  labs(x = "Moran's I estimate", y = NULL) +
+  labs(x = "", y = NULL) +
   guides(alpha = "none",
          fill = "none")+
   theme_minimal()+
