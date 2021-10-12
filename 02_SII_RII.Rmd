@@ -37,6 +37,7 @@ df2<-MOV_GENERAL %>%
 
 options(survey.lonely.psu="remove")
 
+
 ```
 
 # EVENTO: GENERAL
@@ -178,31 +179,26 @@ df3<-
     total = map(.x = ptv,
                 .f = ~bind_rows(.x,neumo,influ,rota)),
     
-    # hr_l = map(.x = total,
-    #          .f = ~h_prop(.x, level = 1)),
-    # 
-    # hr_h = map(.x = total,
-    #          .f = ~h_prop(.x, level = 2)),
-    
     hr = map(.x = total,
-             .f = ~h_prop(.x, 3)),
+             .f = ~h_prop(.x)),
     
     
     ssirii = map(.x = total,
-                 .f = ~sii_rii(.x, level = 3)),
-    
-    ssirii_l = map(.x = total,
-                  .f = ~sii_rii(.x, level = 1)),
-    
-    ssirii_h = map(.x = total,
-                   .f = ~sii_rii(.x, level = 2)),
+                 .f = ~sii_rii(.x)),
   
     graf = map(.x = hr,
                .f = ~gg(.x))
     
   )  
 
-df3$ssirii[[1]]
+
+MOV_GENERAL %>% 
+  filter(ANIO == 2010) %>% 
+  select(EDU_MADRE) %>% 
+  gtsummary::tbl_summary()
+
+
+df3$hr[[1]]
 ```
 
 ## Graficos
@@ -210,20 +206,18 @@ df3$ssirii[[1]]
 ```{r}
 # SII y RII por año (2010 - 2020)
 
-  #ssi.edu<-
+  ssi.edu<-
     df3 %>% select(ANIO,ssirii) %>% 
   unnest() %>% 
   as.data.frame() %>%
-  #filter(vacunatipo =="PTV") %>% 
-  #ungroup() %>%
   
   ggplot(aes(x = as.factor(ANIO), y = ssi, group = vacunatipo)) +
   
   geom_line(aes(color = vacunatipo), size = 1.2) +
-  #geom_ribbon(aes(ymin = sii_l, ymax = sii_h, fill = vacunatipo), alpha = 0.1)+
+  geom_ribbon(aes(ymin = sii_l, ymax = sii_h, fill = vacunatipo), alpha = 0.1)+
   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
   
-  scale_color_npg()+
+  scale_color_npg(alpha = 0.7)+
   scale_fill_npg()+
   
   xlab("Years")+
@@ -270,7 +264,7 @@ temp2<-
                                                    ymax = tasa, ymin = 0, 
                                                    fill = as.factor(ANIO),
                                                    group = as.factor(ANIO)))+
-                         geom_rect(fill = "#AA5674", col = "black")+
+                         geom_rect(fill = "#AA5674", col = "black", width = 0.5)+
                          geom_point(aes(x = medio, y = tasa))+
                          geom_smooth(aes(x = medio, y = tasa), method = "lm", se = F) +
                          xlab("Income quintile (1st - 5th)") +
@@ -292,6 +286,7 @@ temp2<-
 cowplot::plot_grid(plotlist = temp2$grafico)
 
 ggsave("cols_slope_education.png", width = 13, height = 9)
+
 ```
 
 ## INDICE RIQUEZA
@@ -409,6 +404,8 @@ df3<-
     
   ) 
 
+
+
 ```
 
 ## Graficos
@@ -417,20 +414,23 @@ df3<-
 # SII y RII por año (2010 - 2020)
 
 ssi.ir<-
-  df3 %>% select(ANIO,ssirii) %>% 
-  unnest(cols = c(ssirii)) %>% 
-  as.data.frame() %>% 
-  ungroup() %>% 
+   df3 %>% select(ANIO,ssirii) %>% 
+  unnest() %>% 
+  as.data.frame() %>%
   
-  ggplot() +
-  geom_line(aes(x = as.factor(ANIO), y = ssi, col = vacunatipo, group = vacunatipo), size  = 1.3) +
+  ggplot(aes(x = as.factor(ANIO), y = ssi, group = vacunatipo)) +
+  
+  geom_line(aes(color = vacunatipo), size = 1.2) +
+  geom_ribbon(aes(ymin = sii_l, ymax = sii_h, fill = vacunatipo), alpha = 0.1)+
   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
-    
-  scale_color_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80")) +
   
-    xlab("Years")+
-    ylab("SII")+
-    theme(
+  scale_color_npg(alpha = 0.7)+
+  scale_fill_npg()+
+  
+  xlab("Years")+
+  ylab("SII")+
+  scale_x_discrete(expand = c(0, 0.15))+
+  theme(
     axis.title = element_text(face ="bold", size = 11),
     legend.text = element_text(size = 8, face = "bold"),
     axis.text = element_text(face = "bold"),
@@ -493,6 +493,8 @@ temp2<-
 cowplot::plot_grid(plotlist = temp2$grafico)
 
 ggsave("cols_slope_RIQ.png", width = 13, height = 9)
+
+
 ```
 
 # EVENTO POR REGION
@@ -615,51 +617,6 @@ df3<-
 #### Graficos - IR
 
 ```{r}
-################
-
-# df3 %>% select(ANIO,ssirii) %>% 
-#   unnest(cols = c(ssirii)) %>% 
-#   as.data.frame() %>% 
-#   ungroup() %>% 
-#   
-#   pivot_longer(cols = c(rii,sii), names_to = "index") %>% 
-#   
-#   mutate(
-#     line = ifelse(index=="rii",1,0)
-#   ) %>% 
-#   
-#   filter(index == "sii") %>% 
-#   
-#    ggplot() +
-#   geom_line(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo), size  = 1) +
-#   #geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
-#   geom_hline(aes(yintercept = line), linetype = "dashed") +
-#   
-#   scale_color_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80")) +
-#   facet_wrap(~index, scales = "free", labeller = labeller(index = c("rii" = "RII",
-#                                                                     "ssi" = "SII"))) +
-#     xlab("Years")+
-#     ylab("Value")+
-#     #theme_minimal()+
-#     theme(
-#     axis.title = element_text(face ="bold", size = 11),
-#     legend.text = element_text(size = 8, face = "bold"),
-#     axis.text = element_text(face = "bold", family = "Candara"),
-#     axis.text.x = element_text( size = 9),
-#     legend.position = "top",
-#     legend.title = element_blank(),
-#     axis.line = element_line(colour = "black", size = 1),
-#     panel.background = element_blank(),
-#     strip.background = element_blank(),
-#     strip.text = element_text(face = "bold")
-#   ) + 
-#   
-#   facet_wrap(~DEPARTAMEN, scales = "free")
-# 
-# ggsave("Fig5.png", width = 25, height = 14)
-
-
-#####################
   
 df4<-df3 %>% 
   select(ANIO,ssirii) %>% 
@@ -1009,7 +966,6 @@ data<-
 
   ggplot(aes(x = as.factor(ANIO), y = vacunatipo, fill = moran.t, alpha = alpha))+
   geom_tile()+
-  #scale_x_discrete(position = "top") +
   scale_fill_gradient(high = "#44525A", low ="#ABC0CA", limits = c(0.10,0.40))+
   geom_text(aes(label = formatC(round(moran.t, 2), format = "f", digits = 2)), size = 3.5)+
   scale_x_discrete(position = "top") +
@@ -1478,12 +1434,18 @@ juntos<-
     var = ifelse(var == "ssirii_si","Social program","No social program"),
     estrato = ifelse(estrato == "edu","ME","IQ")
   ) %>% 
-  ggplot() +
-  geom_line(aes(x = as.factor(ANIO), y = ssi, col = vacunatipo, group = vacunatipo), size  = 1.3) +
-  geom_hline(aes(yintercept = 0), linetype = "dashed")+
-  facet_grid(estrato~var, scales = "free") +
+  ggplot(aes(x = as.factor(ANIO), y = ssi, group = vacunatipo)) +
+  
+  geom_line(aes(color = vacunatipo), size = 1.2) +
+  geom_ribbon(aes(ymin = sii_l, ymax = sii_h, fill = vacunatipo), alpha = 0.1)+
+  geom_hline(aes(yintercept = 0), linetype = "dashed") + 
+  
+  scale_color_npg(alpha = 0.7)+
+  scale_fill_npg()+
+  
   scale_color_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80")) +
   
+  facet_grid(estrato~var, scales = "free") +
     xlab("Years")+
     ylab("Value")+
     
@@ -1500,9 +1462,10 @@ juntos<-
     strip.text = element_text(face = "bold", size = 9)
   )
 
+
 ```
 
-\#EVENTO: ANALISIS POR TIPO DE VIVIENDA
+#EVENTO: ANALISIS POR TIPO DE VIVIENDA
 
 ## EDUCACION DE LA MADRE
 
@@ -1935,12 +1898,18 @@ tipovivienda<-
     var = ifelse(var == "ssirii_si","Rural","Urban"),
     estrato = ifelse(estrato == "edu","ME","IQ")
   ) %>% 
-  ggplot() +
-  geom_line(aes(x = as.factor(ANIO), y = ssi, col = vacunatipo, group = vacunatipo), size  = 1.3) +
-  geom_hline(aes(yintercept = 0), linetype = "dashed")+
-  facet_grid(estrato~var, scales = "free") +
+  ggplot(aes(x = as.factor(ANIO), y = ssi, group = vacunatipo)) +
+  
+  geom_line(aes(color = vacunatipo), size = 1.2) +
+  geom_ribbon(aes(ymin = sii_l, ymax = sii_h, fill = vacunatipo), alpha = 0.1)+
+  geom_hline(aes(yintercept = 0), linetype = "dashed") + 
+  
+  scale_color_npg(alpha = 0.7)+
+  scale_fill_npg()+
+  
   scale_color_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80")) +
   
+  facet_grid(estrato~var, scales = "free") +
     xlab("Years")+
     ylab("Value")+
     
@@ -1958,7 +1927,7 @@ tipovivienda<-
   )
 ```
 
-\#EVENTO: ANALISIS POR TIPO DE SEGURO
+#EVENTO: ANALISIS POR TIPO DE SEGURO
 
 ```{r}
 MOV_GENERAL <- read.csv("./BD.INTERMEDIAS/mov_general.csv")
@@ -2433,12 +2402,18 @@ tipocred<-
     var = ifelse(var == "ssirii_si","Goverment","Private"),
     estrato = ifelse(estrato == "edu","ME","IQ")
   ) %>% 
-  ggplot() +
-  geom_line(aes(x = as.factor(ANIO), y = ssi, col = vacunatipo, group = vacunatipo), size  = 1.3) +
-  geom_hline(aes(yintercept = 0), linetype = "dashed")+
-  facet_grid(estrato~var, scales = "free") +
+  ggplot(aes(x = as.factor(ANIO), y = ssi, group = vacunatipo)) +
+  
+  geom_line(aes(color = vacunatipo), size = 1.2) +
+  geom_ribbon(aes(ymin = sii_l, ymax = sii_h, fill = vacunatipo), alpha = 0.1)+
+  geom_hline(aes(yintercept = 0), linetype = "dashed") + 
+  
+  scale_color_npg(alpha = 0.7)+
+  scale_fill_npg()+
+  
   scale_color_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80")) +
   
+  facet_grid(estrato~var, scales = "free") +
     xlab("Years")+
     ylab("Value")+
     
