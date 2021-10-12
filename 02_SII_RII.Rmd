@@ -211,16 +211,16 @@ df3$ssirii[[1]]
 # SII y RII por año (2010 - 2020)
 
   #ssi.edu<-
-    df3 %>% select(ANIO,ssirii,ssirii_l,ssirii_h) %>% 
+    df3 %>% select(ANIO,ssirii) %>% 
   unnest() %>% 
   as.data.frame() %>%
-  filter(vacunatipo =="PTV") %>% 
-  ungroup() %>%
+  #filter(vacunatipo =="PTV") %>% 
+  #ungroup() %>%
   
   ggplot(aes(x = as.factor(ANIO), y = ssi, group = vacunatipo)) +
   
   geom_line(aes(color = vacunatipo), size = 1.2) +
-  geom_ribbon(aes(ymin = ssi_l, ymax = ssi_h, fill = vacunatipo), alpha = 0.1)+
+  #geom_ribbon(aes(ymin = sii_l, ymax = sii_h, fill = vacunatipo), alpha = 0.1)+
   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
   
   scale_color_npg()+
@@ -398,17 +398,16 @@ df3<-
     total  = map2(.x = pretotal1, .y = pretotal2, .f = ~bind_rows(.x,.y)),
     
     hr = map(.x = total,
-             .f = ~h_prop(.x)),
+             .f = ~h_prop(.x,3)),
     
     ssirii = map(.x = total,
-                 .f = ~sii_rii(.x)),
+                 .f = ~sii_rii(.x,3)),
     
     
     graf = map(.x = hr,
                .f = ~gg(.x))
     
   ) 
-
 
 ```
 

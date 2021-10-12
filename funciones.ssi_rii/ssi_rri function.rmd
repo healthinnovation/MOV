@@ -378,13 +378,9 @@ sii_rii<-function(data,level=NULL) {
      
       # lm para ssi 
      modelo = map(.x = data, 
-                  .f = ~estimatr::lm_robust(formula = tasa~hr2, data = .x, se_type = "stata")),
+                  .f = ~lm(formula = tasa~hr2, data = .x, weights = total)),
      
       # extraer beta
-     # modelo2 = map(.x = modelo, 
-     #               .f = ~tidy(lmtest::coeftest(.x, vcov = vcovHC, 
-     #                                           type = "HC2"), conf.int = T)),
-     
      modelo2 = map(.x = modelo,
                    .f = ~tidy(.x,conf.int = T))
  
@@ -400,14 +396,15 @@ sii_rii<-function(data,level=NULL) {
    
     # rri f(1)/f(0)
    mutate(
-      # rii = map_dbl(.x = modelo,
-      #           .f =~predict(.x,
-      #                        newdata = bd %>% filter(hr2 == 100))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
-          
-          ssi = estimate
-          ) 
+      rii = map_dbl(.x = modelo,
+                .f =~predict(.x,
+                             newdata = bd %>% filter(hr2 == 100))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
+      ssi = estimate,
+      sii_l = conf.low,
+      sii_h = conf.high
+          ) %>% 
    
-   #select(vacunatipo,term,ssi,rii)
+   select(vacunatipo,term,ssi,sii_l,sii_h)
  
  data
       }
@@ -507,7 +504,7 @@ sii_rii_map<-function(data) {
    group_by(DEPARTAMEN,vacunatipo) %>% 
       
       mutate(
-         tasa = (vacuna/total)*10000
+         tasa = (vacuna/total)*100
       ) %>% 
    
     # ordenar de - a +
@@ -531,12 +528,11 @@ sii_rii_map<-function(data) {
    mutate(
      
       # lm para ssi 
-     modelo = map(.x = data, .f = ~lm(formula = tasa~hr2, data = .x)),
+     modelo = map(.x = data, .f = ~lm(formula = tasa~hr2, weights = total, data = .x)),
      
       # extraer beta
      modelo2 = map(.x = modelo, 
-                   .f = ~tidy(lmtest::coeftest(.x, vcov = vcovHC, 
-                                               type = "HC2"), conf.int = T)),
+                   .f = ~tidy(.x, conf.int = T)),
  
      ) %>% 
    
@@ -551,12 +547,14 @@ sii_rii_map<-function(data) {
                         .f =~predict(.x,
                                      newdata = bd %>% filter(hr2 == 100))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
           
-          sii = estimate) %>% 
+          sii = estimate,
+          sii_l = conf.low,
+          sii_h = conf.high) %>% 
       
       mutate(sii = round(sii,2),
              rii = round(rii,1)) %>% 
    
-   select(vacunatipo,term,sii,rii)
+   select(vacunatipo,term,sii,sii_l,sii_h)
  
  data
  
