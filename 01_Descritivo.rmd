@@ -64,7 +64,7 @@ df2<-MOV_GENERAL %>%
   nest() %>%
   mutate(
     df= map(.x = data,
-            .f = ~svydesign(id =~ V001, strata =~ V022, probs=~V005, data=.x))) 
+            .f = ~svydesign(id =~ V001, strata =~ V022, weights=~V005, data=.x))) 
 
 options(survey.lonely.psu="remove")
 
@@ -348,23 +348,30 @@ rota1<-
 
 
  rbind(ptv1,neumo1,influ1,rota1) %>% 
+   as.data.frame() %>% 
+   mutate(
+     vacunatipo = case_when(vacunatipo == "ptv1" ~ "PTV1",
+                            vacunatipo == "neumo1" ~ "NM1",
+                            vacunatipo == "influ1" ~ "INFLU1",
+                            vacunatipo == "rota1" ~ "ROTA1")
+   ) %>% 
   ungroup() %>%
-  ggplot(aes(x = as.factor(ANIO), y = vacuna*100,
-             ymin = ci_l*100, ymax = ci_h*100,
-             fill= vacunatipo, col = vacunatipo, group = vacunatipo))+
+  ggplot(aes(x = ANIO, y = vacuna*100,
+             ymin = ci_l*100, ymax = ci_h*100, group = vacunatipo))+
 
-  geom_smooth(alpha = 0.3, size = 1.2) +
-  scale_fill_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80"),
-                     labels = c("INFLU1","NM1","PTV1","ROTA1")) +
-
-  scale_color_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80"),
-                     labels = c("INFLU1","NM1","PTV1","ROTA1")) +
+  geom_line(aes(color = vacunatipo), size = 1.5) +
+  geom_ribbon(aes(fill = vacunatipo), alpha = 0.1)+
+  
+  scale_color_npg(alpha = 0.7)+
+  scale_fill_npg()+
 
   xlab("Years") +
-  scale_x_discrete(expand = c(0, 0.15))+
+  scale_x_continuous(expand = c(0, 0), breaks = c(2010:2020), limits = c(2010,2020.1))+
   ylab("Prop. %")+
 
   geom_hline(aes(yintercept = 85), linetype = "dashed") +
+   
+   theme_bw()+
 
   theme(
     axis.title = element_text(face ="bold", size = 11),
@@ -376,7 +383,8 @@ rota1<-
     axis.line = element_line(colour = "black", size = 1),
     panel.background = element_blank(),
     strip.background = element_blank(),
-    strip.text = element_text(face = "bold")
+    strip.text = element_text(face = "bold"),
+    panel.grid = element_blank()
   )
              
 ggsave("Fig1.png",width = 8, height = 6)           
@@ -1056,7 +1064,7 @@ ggplot(data = st_as_sf(df3) %>% mutate(vacuna = vacuna*100,
 
   theme_bw()
 
-df3
+
 ```
 
 ## EDAD MADRE
@@ -1240,23 +1248,27 @@ rota1<-
 
 
 rbind(ptv1,neumo1,influ1,rota1) %>% 
-  #ungroup() %>% 
-  ggplot(aes(x = as.factor(ANIO), y = vacuna*100, 
-             ymin = ci_l*100, ymax = ci_h*100, 
-             fill= vacunatipo, col = vacunatipo, group = vacunatipo))+
+   as.data.frame() %>% 
+   mutate(
+     vacunatipo = case_when(vacunatipo == "ptv1" ~ "PTV1",
+                            vacunatipo == "neumo1" ~ "NM1",
+                            vacunatipo == "influ1" ~ "INFLU1",
+                            vacunatipo == "rota1" ~ "ROTA1")
+   ) %>% 
+  ggplot(aes(x = ANIO, y = vacuna*100, 
+             ymin = ci_l*100, ymax = ci_h*100, group = vacunatipo))+
   
-  geom_smooth(alpha = 0.3, size = 1.2) +
-  scale_fill_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80"),
-                     labels = c("INFLU1","NM1","PTV1","ROTA1")) +
+  geom_line(aes(color = vacunatipo), size = 1.5) +
+  geom_ribbon(aes(fill = vacunatipo), alpha = 0.1)+
   
-  scale_color_manual(values = c("#595260","#7ECA9C","#A799B7","#AD6C80"),
-                     labels = c("INFLU1","NM1","PTV1","ROTA1")) +
-  
+  scale_color_npg(alpha = 0.7)+
+  scale_fill_npg()+
+
   xlab("Years") +
-  scale_x_discrete(expand = c(0, 0.15))+
+  scale_x_continuous(expand = c(0, 0), breaks = c(2010:2020), limits = c(2010,2020.1))+
   ylab("Prop. %")+
   
-  #geom_hline(aes(yintercept = 85), linetype = "dashed") + 
+  theme_bw()+
   
   theme(
     axis.title = element_text(face ="bold", size = 11),
@@ -1268,7 +1280,8 @@ rbind(ptv1,neumo1,influ1,rota1) %>%
     axis.line = element_line(colour = "black", size = 1),
     panel.background = element_blank(),
     strip.background = element_blank(),
-    strip.text = element_text(face = "bold")
+    strip.text = element_text(face = "bold"),
+    panel.grid = element_blank()
   ) 
 
 

@@ -534,7 +534,7 @@ MOV2016<- VACUNA3 %>%
 NINIO2 <- read_sav("ENDES/2015/REC41.sav")
 MUJER1 <- read_sav("ENDES/2015/REC42.sav" )
 VACUNA1 <- read_sav("ENDES/2015/REC43.sav")
-VACUNA2 <- read_sav("ENDES/2015/REC95.sav") # EDAD
+VACUNA2 <- haven::read_sav("ENDES/2015/REC95.sav") # EDAD
 HOGAR1 <- read_sav("ENDES/2015/RECH0.sav")
 HOGAR_MADRE <- read_sav("ENDES/2015/RECH1.sav")
 VIVIENDA1 <- read_sav("ENDES/2015/RECH23.sav")
