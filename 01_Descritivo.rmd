@@ -246,7 +246,10 @@ income<-
                                         variable = "income")
 
 
-descriptivo<-bind_rows(housing,credtype,creloc,edumadre,income,etnia)
+descriptivo<-
+  bind_rows(housing,credtype,creloc,edumadre,income,etnia) %>% 
+  select(ANIO,prop,`2.5 %`,`97.5 %`,var,variable)
+  
 ```
 
 #DOSIS 11 ANIOS
