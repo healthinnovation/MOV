@@ -26,6 +26,7 @@ library(ggupset)
 library(questionr)
 library(tmap)
 library(GGally)
+library(ggsci)
 
 region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 ```
@@ -1152,7 +1153,7 @@ df2<-MOV_GENERAL %>%
   nest() %>%
   mutate(
     df= map(.x = data,
-            .f = ~svydesign(id =~ V001, strata =~ V022, probs=~V005, data=.x))) 
+            .f = ~svydesign(id =~ V001, strata =~ V022, weights=~V005, data=.x))) 
 
 options(survey.lonely.psu="remove")
 
