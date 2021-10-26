@@ -610,7 +610,20 @@ df3<-
 #### Graficos - IR
 
 ```{r}
+
+centroid<- region_shape %>% 
+  sf::st_centroid() %>% 
+  st_coordinates() %>% 
+  as.data.frame() %>% 
+  bind_cols(region_shape) %>% 
+  filter(CAPITAL != "CALLAO") %>% 
+  mutate(
+    CAP = substr(DEPARTAMEN, start = 1, stop = 2),
+    CAP = ifelse(DEPARTAMEN == "HUANCAVELICA","HV",
+                 ifelse(DEPARTAMEN == "LA LIBERTAD","LL",CAP))
+  )
   
+
 df4<-df3 %>% 
   select(ANIO,ssirii) %>% 
   unnest(cols = c(ssirii)) %>%
@@ -644,6 +657,7 @@ df4<-df3 %>%
            
          )) +
   geom_sf(alpha = 0.5, aes(fill=siicat2)) +
+  geom_text(data=centroid, aes(x = X, y = Y, label = CAP), size = 1.5)+
 
   scale_fill_manual(values = c("#531a23","#a63446","#e4c2c7","#b6cfde","#0c6291","#084465"))+
   
@@ -662,7 +676,8 @@ df4<-df3 %>%
   
   labs(fill = "Slope Index of Inequality") +
   
-  theme(axis.text.x = element_text(angle = 30, size = 6),
+  theme(axis.title = element_blank(),
+        axis.text.x = element_text(angle = 30, size = 6),
         strip.background = element_blank(),
         panel.background = element_blank(),
         strip.text = element_text(face = "bold"),
@@ -685,6 +700,7 @@ plot_grid(g1,g2,g3,g4,legend, ncol = 1, labels = c("A","B","C","D"), rel_heights
 
  ggsave("Fig6.png",width = 10,height = 15)
 
+ 
 ```
 
 #### Moran's I - IR
