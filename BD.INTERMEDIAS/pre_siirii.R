@@ -1,3 +1,4 @@
+
 t<-data %>% 
   filter(ANIO!=2013) %>% 
   mutate(
@@ -40,4 +41,5 @@ t<-
     pvt = map(.x = df,
               .f = ~svyby(~INDICERIQUEZA, by=~JUNTOS, design = .x, FUN = svytotal, na.rm.all = T))
   )
+
 
