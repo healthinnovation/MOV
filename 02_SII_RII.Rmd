@@ -685,6 +685,7 @@ plot_grid(g1,g2,g3,g4,legend, ncol = 1, labels = c("A","B","C","D"), rel_heights
 
  ggsave("Fig6.png",width = 10,height = 15)
 
+ df4
 ```
 
 #### Moran's I - IR
@@ -1155,6 +1156,7 @@ df3<-
     graf_no = map(.x = hr_no,
                   .f = ~gg(.x)))
 
+
 ```
 
 ### Graficos
@@ -1257,7 +1259,7 @@ df3<-
                 
                 left_join(
                   
-                  svytotal(~INDICERIQUEZA, design = .x, na.rm = T) %>%
+                  svytotal(~INDICERIQUEZA + JUNTOS, design = .x, na.rm = T) %>%
                     
                     data.frame() %>%
                     
@@ -1363,6 +1365,7 @@ df3<-
                   .f = ~gg(.x)))
   
 
+df3$ptv[[1]]
 ```
 
 ### Graficos
