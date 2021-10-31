@@ -22,24 +22,29 @@ t<-data %>%
                 
                 select(INDICERIQUEZA,JUNTOS,orden,vacuna,vacunatipo,se)))
 
-t$ptv[[1]]
+
 
 data<-MOV_GENERAL %>% 
-  filter(JUNTOS == 1) %>% 
-  group_by(ANIO) %>% 
+  group_by(ANIO,TIPORESIDENCIA) %>% 
   nest() %>%
   mutate(
     df= map(.x = data, 
             .f = ~svydesign(id =~ V001, strata =~ V022, weights=~V005, data=.x))) 
 
 
-
-
-t<-
-  data %>% 
+t<-df3 %>% 
   mutate(
-    pvt = map(.x = df,
-              .f = ~svyby(~INDICERIQUEZA, by=~JUNTOS, design = .x, FUN = svytotal, na.rm.all = T))
-  )
+    hist = map(.x = hr,
+               .f = ~ggplot(data = .x, aes(tasa))+
+                 geom_histogram()+
+                 facet_wrap(~vacunatipo)))
 
 
+plot_grid(plotlist = t$hist)
+ggsave("imagen.png",width = 17, height = 10)
+
+df2
+plot_grid(g1,g2,g3,g4,legend, ncol = 2, labels = c("A","B","C","D"), rel_heights = c(.8,.8,.15))
+ggsave("SFig3.png",width = 13,height = 6)
+plot_grid(g1,g2,g3,g4,legend, ncol = 2, labels = c("A","B","C","D"), rel_heights = c(.8,.8,.15))
+ggsave("SFig4.png",width = 13,height = 6)
