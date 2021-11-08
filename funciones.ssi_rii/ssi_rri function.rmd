@@ -228,9 +228,9 @@ sii_rii<-function(data,level=NULL) {
       ssi = estimate,
       sii_l = conf.low,
       sii_h = conf.high
-          ) %>% 
+          )
    
-   select(vacunatipo,term,ssi,sii_l,sii_h)
+   #select(vacunatipo,term,ssi,sii_l,sii_h)
  
  data
       }
@@ -338,9 +338,9 @@ sii_rii_map<-function(data) {
           sii_h = conf.high) %>% 
       
       mutate(sii = round(sii,2),
-             rii = round(rii,1)) %>% 
+             rii = round(rii,1)) 
    
-   select(vacunatipo,term,sii,sii_l,sii_h)
+   #select(vacunatipo,term,sii,sii_l,sii_h)
  
  data
  
