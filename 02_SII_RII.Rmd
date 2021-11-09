@@ -209,7 +209,7 @@ df3<-
   ggplot(aes(x = ANIO, y = ssi, group = vacunatipo)) +
   
   geom_line(aes(color = vacunatipo), size = 1.2) +
-  geom_ribbon(aes(ymin = sii_l, ymax = sii_h, fill = vacunatipo), alpha = 0.1)+
+  geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=vacunatipo), width = 0.2, size = 0.7)+
   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
   
   scale_color_npg(alpha = 0.7)+
@@ -421,7 +421,7 @@ ssi.ir<-
   ggplot(aes(x = ANIO, y = ssi, group = vacunatipo)) +
   
   geom_line(aes(color = vacunatipo), size = 1.2) +
-  geom_ribbon(aes(ymin = sii_l, ymax = sii_h, fill = vacunatipo), alpha = 0.1)+
+  geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=vacunatipo), width = 0.2, size = 0.7)+
   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
   
   scale_color_npg(alpha = 0.7)+
@@ -620,6 +620,8 @@ df3<-
 
 ```{r}
 
+library(biscale)
+
 centroid<- region_shape %>% 
   sf::st_centroid() %>% 
   st_coordinates() %>% 
@@ -633,16 +635,26 @@ centroid<- region_shape %>%
   )
   
 
-df4<-df3 %>% 
+  df4<-df3 %>% 
   select(ANIO,ssirii) %>% 
   unnest(cols = c(ssirii)) %>%
   
   
   left_join(region_shape, by = "DEPARTAMEN") %>% 
+  left_join(centroid) %>% 
+  
+  mutate(
+    line = ifelse(p.value <0.05,"bold.italic","plain"),
+    size = ifelse(p.value > 0.05,0.9,1)
+  ) %>% 
   
   group_by(vacunatipo) %>% 
   
-  st_as_sf() %>%
+  st_as_sf()
+
+
+  df4<-
+  df4 %>% 
   
   nest() %>% 
   
@@ -651,31 +663,25 @@ df4<-df3 %>%
     grafico = map(.x = data,
                   .f = ~ggplot(data = .x %>%
                                  
-         #filter(ANIO%in%c(2010,2015,2019,2020)) %>% 
-         mutate(
-           siicat = ifelse(sii< -10,"< -10",
-                           ifelse(sii>=-10&sii<=-5,"-10 to -5",
-                                  ifelse(sii>=-5&sii<0,"-5 to 0",
-                                         ifelse(sii>=0&sii<5,"0 to 5",
-                                                ifelse(sii>=5&sii<10,"5 to 10",
-                                                       ifelse(sii>10,"> 10",NA)))))),
+         filter(ANIO%in%c(2010,2015,2019,2020)), aes( alpha =size)) +
            
-           
-           siicat2 = factor(siicat, levels = c("< -10","-10 to -5","-5 to 0",
-                                               "0 to 5","5 to 10","> 10"))
-           
-         )) +
-  geom_sf(alpha = 0.9, aes(fill=sii), size = 0.2) +
-  #geom_text(data=centroid, aes(x = X, y = Y, label = CAP), size = 1.5)+
+  geom_sf(aes(fill=sii), size = 0.2) +
+  geom_text(aes(x = X, y = Y, label = CAP), size = 1.5)+
 
-
+  
   scale_fill_gradient2(mid="#FBFEF9",low="#0C6291",high="#A63446", limits = c(-6,6))+
   
-  guides(fill = guide_colourbar(barheight = 0.5, barwidth = 20,title.position = "top", direction = "horizontal"))+
-    
-    facet_wrap(~ANIO, ncol = 1)+
   
-  labs(fill = "Slope Index of Inequality") +
+  guides(fill = guide_colourbar(barheight = 0.5, 
+                                barwidth = 20,
+                                title.position = "top",
+                                direction = "horizontal"),
+         
+         alpha = "none")+
+    
+    facet_wrap(~ANIO, ncol = 4)+
+  
+  labs(fill = "Slope Index of Inequality (Income Quintile)") +
   
   theme(axis.title = element_blank(),
         axis.text.x = element_text(angle = 30, size = 6),
@@ -696,10 +702,11 @@ g4<-plot_grid(df4$grafico[[4]] + theme(legend.position = "none"))
 
 legend<- get_legend(df4$grafico[[1]])
 
-plot_grid(g1,g2,g3,g4,legend, ncol = 1, labels = c("A","B","C","D"), rel_heights = c(.8,.8,.2))
+plot_grid(g1,g2,g3,g4,legend, ncol = 1, labels = c("A","B","C","D"), rel_heights = c(.8,.8,.8,.8,.2))
 
 
  ggsave("Fig6.png",width = 10,height = 15)
+
 
 ```
 
@@ -901,16 +908,26 @@ centroid<- region_shape %>%
   )
   
 
-df4<-df3 %>% 
+  df4<-df3 %>% 
   select(ANIO,ssirii) %>% 
   unnest(cols = c(ssirii)) %>%
-  #filter(vacunatipo%in%c("INFLU")) %>% 
+  
   
   left_join(region_shape, by = "DEPARTAMEN") %>% 
+  left_join(centroid) %>% 
+  
+  mutate(
+    line = ifelse(p.value <0.05,"bold.italic","plain"),
+    size = ifelse(p.value > 0.05,0.9,1)
+  ) %>% 
   
   group_by(vacunatipo) %>% 
   
-  st_as_sf() %>%
+  st_as_sf()
+
+
+  df4<-
+  df4 %>% 
   
   nest() %>% 
   
@@ -919,31 +936,25 @@ df4<-df3 %>%
     grafico = map(.x = data,
                   .f = ~ggplot(data = .x %>%
                                  
-         #filter(ANIO%in%c(2010,2015,2019,2020)) %>% 
-         mutate(
-           siicat = ifelse(sii< -10,"< -10",
-                           ifelse(sii>=-10&sii<=-5,"-10 to -5",
-                                  ifelse(sii>=-5&sii<0,"-5 to 0",
-                                         ifelse(sii>=0&sii<5,"0 to 5",
-                                                ifelse(sii>=5&sii<10,"5 to 10",
-                                                       ifelse(sii>10,"> 10",NA)))))),
+         filter(ANIO%in%c(2010,2015,2019,2020)), aes( alpha =size)) +
            
-           
-           siicat2 = factor(siicat, levels = c("< -10","-10 to -5","-5 to 0",
-                                               "0 to 5","5 to 10","> 10"))
-           
-         )) +
-  geom_sf(alpha = 0.9, aes(fill=sii), size = 0.2) +
-  geom_text(data=centroid, aes(x = X, y = Y, label = CAP), size = 1.5)+
+  geom_sf(aes(fill=sii), size = 0.2) +
+  geom_text(aes(x = X, y = Y, label = CAP), size = 1.5)+
 
-  #scale_fill_manual(values = c("#531a23","#a63446","#e4c2c7","#b6cfde","#0c6291","#084465"))+
-    scale_fill_gradient2(mid="#FBFEF9",low="#0C6291",high="#A63446", limits = c(-6,6))+
   
-  guides(fill = guide_colourbar(barheight = 0.5, barwidth = 20,title.position = "top", direction = "horizontal"))+
+  scale_fill_gradient2(mid="#FBFEF9",low="#0C6291",high="#A63446", limits = c(-6,6))+
+  
+  
+  guides(fill = guide_colourbar(barheight = 0.5, 
+                                barwidth = 20,
+                                title.position = "top",
+                                direction = "horizontal"),
+         
+         alpha = "none")+
     
-    facet_wrap(~ANIO, ncol = 6)+
+    facet_wrap(~ANIO, ncol = 4)+
   
-  labs(fill = "Slope Index of Inequality") +
+  labs(fill = "Slope Index of Inequality (Income Quintile)") +
   
   theme(axis.title = element_blank(),
         axis.text.x = element_text(angle = 30, size = 6),
@@ -964,7 +975,7 @@ g4<-plot_grid(df4$grafico[[4]] + theme(legend.position = "none"))
 
 legend<- get_legend(df4$grafico[[1]])
 
-plot_grid(g1,g2,g3,g4,legend, ncol = 1, labels = c("A","B","C","D"), rel_heights = c(.8,.8,.2))
+plot_grid(g1,g2,g3,g4,legend, ncol = 1, labels = c("A","B","C","D"), rel_heights = c(.8,.8,.8,.8,.2))
 
 
  ggsave("Fig7.png",width = 10,height = 15)
@@ -1377,7 +1388,8 @@ programa.df<-bind_rows(riq,edu) %>%
 ggplot(aes(x = ANIO, y = ssi, group = JUNTOS)) +
   
   geom_line(aes(color = JUNTOS), size = 1.2) +
-  #geom_ribbon(aes(ymin = sii_l, ymax = sii_h, fill = JUNTOS), alpha = 0.1)+
+ geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=JUNTOS), width = 0.2, size = 0.7)+
+  
   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
   
   scale_color_npg(alpha = 0.7)+
@@ -1399,7 +1411,7 @@ ggplot(aes(x = ANIO, y = ssi, group = JUNTOS)) +
     strip.text = element_text(face = "bold", size = 9),
     panel.spacing = unit(1.5,"lines")
   ) +
-  facet_grid(estrato~vacunatipo, scales="free")
+  facet_grid(JUNTOS+estrato~vacunatipo, scales="free")
 ```
 
 
@@ -1717,7 +1729,6 @@ riq<-df3 %>%
     estrato = "riq"
   )
 
-vivienda.df<-bind_rows(riq,edu)
 #####
 
 
@@ -1734,7 +1745,7 @@ vivienda.df<-bind_rows(riq,edu) %>%
 ggplot(aes(x = ANIO, y = ssi, group = TIPORESIDENCIA)) +
   
   geom_line(aes(color = TIPORESIDENCIA), size = 1.2) +
-  #geom_ribbon(aes(ymin = sii_l, ymax = sii_h, fill = TIPORESIDENCIA), alpha = 0.1)+
+ geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=TIPORESIDENCIA), width = 0.2, size = 0.7)+
   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
   
   scale_color_npg(alpha = 0.7)+
@@ -1756,7 +1767,7 @@ ggplot(aes(x = ANIO, y = ssi, group = TIPORESIDENCIA)) +
     strip.text = element_text(face = "bold", size = 9),
     panel.spacing = unit(1.5,"lines")
   ) +
-  facet_grid(estrato~vacunatipo, scales="free")
+  facet_grid(TIPORESIDENCIA+estrato~vacunatipo, scales="free")
 ```
 
 
@@ -2096,7 +2107,7 @@ tipocred<-
   ggplot(aes(x = ANIO, y = ssi, group = tiposeguro)) +
   
   geom_line(aes(color = tiposeguro), size = 1.2) +
-  #geom_ribbon(aes(ymin = sii_l, ymax = sii_h, fill = tiposeguro), alpha = 0.1)+
+ geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=tiposeguro), width = 0.2, size = 0.7)+
   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
   
   scale_color_npg(alpha = 0.7)+
@@ -2118,7 +2129,7 @@ tipocred<-
     strip.text = element_text(face = "bold", size = 9),
     panel.spacing = unit(1.5,"lines")
   ) +
-  facet_grid(estrato~vacunatipo, scales="free")
+  facet_grid(tiposeguro+estrato~vacunatipo, scales="free")
 
 ```
 
@@ -2138,412 +2149,7 @@ legend<- get_legend(programa.df)
 
 plot_grid(p1,p2,p3, cols = 1,labels = c("A","B","C"), rel_heights = c(1,1,1,.1))
 
-ggsave("panel_sii.png",height = 12, width = 17)
+ggsave("panel_sii.png",height = 20, width = 17)
 
 ```
 
-# OTROS
-
-## DEPARTAMENTOS
-
-```{r, eval= F}
-# df3<-
-#   df2 %>% 
-#   mutate(
-#     
-#     ptv = map(.x =df,
-#               .f = ~svyby(~MOV_PTV_e1, by=~DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
-#                 
-#                 mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV",
-#                        orden =as.numeric(as.factor(DEPARTAMEN))) %>% 
-#                 
-#                 select(-MOV_PTV_e1) %>% 
-#                 
-#                 left_join(
-#                   
-#                   svytotal(~DEPARTAMEN, design = .x) %>%
-#                     
-#                     data.frame() %>%
-#                     
-#                     rownames_to_column("DEPARTAMEN") %>%
-#                     
-#                     mutate(
-#                       DEPARTAMEN = substring(DEPARTAMEN,11))) %>%
-#                 
-#                 select(DEPARTAMEN,total,vacuna,vacunatipo,se,orden,-`SE`)),
-#     
-#     
-#     
-#     neumo = map(.x =df,
-#                 .f = ~svyby(~MOV_NEUMO_e1, by=~DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
-#                   
-#                   mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO",
-#                          orden =as.numeric(as.factor(DEPARTAMEN))) %>% 
-#                   
-#                   select(-MOV_NEUMO_e1) %>% 
-#                   
-#                   left_join(
-#                     
-#                     svytotal(~DEPARTAMEN, design = .x) %>%
-#                       
-#                       data.frame() %>%
-#                       
-#                       rownames_to_column("DEPARTAMEN") %>%
-#                       
-#                       mutate(
-#                         DEPARTAMEN = substring(DEPARTAMEN,11))) %>%
-#                   
-#                   select(DEPARTAMEN,total,vacuna,vacunatipo,se,orden,-`SE`)),
-#     
-#     
-#     influ = map(.x =df,
-#                 .f = ~svyby(~MOV_INFLU_e1, by=~DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
-#                   
-#                   mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU",
-#                          orden =as.numeric(as.factor(DEPARTAMEN))) %>% 
-#                   
-#                   select(-MOV_INFLU_e1) %>% 
-#                   
-#                   left_join(
-#                     
-#                     svytotal(~DEPARTAMEN, design = .x) %>%
-#                       
-#                       data.frame() %>%
-#                       
-#                       rownames_to_column("DEPARTAMEN") %>%
-#                       
-#                       mutate(
-#                         DEPARTAMEN = substring(DEPARTAMEN,11))) %>%
-#                   
-#                   select(DEPARTAMEN,total,vacuna,vacunatipo,se,orden,-`SE`)),
-#     
-#     
-#     rota  = map(.x =df,
-#                 .f = ~svyby(~MOV_ROTA_e1, by=~DEPARTAMEN, design =.x, FUN=svytotal, na.rm = T) %>% 
-#                   
-#                   mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA",
-#                          orden =as.numeric(as.factor(DEPARTAMEN))) %>% 
-#                   
-#                   select(-MOV_ROTA_e1) %>% 
-#                   
-#                   left_join(
-#                     
-#                     svytotal(~DEPARTAMEN, design = .x) %>%
-#                       
-#                       data.frame() %>%
-#                       
-#                       rownames_to_column("DEPARTAMEN") %>%
-#                       
-#                       mutate(
-#                         DEPARTAMEN = substring(DEPARTAMEN,11))) %>%
-#                   
-#                   select(DEPARTAMEN,total,vacuna,vacunatipo,se,orden,-`SE`))) %>% 
-#   
-#   
-#   mutate(
-#     
-#     pretotal1  = map2(.x = ptv, .y = neumo, .f = ~bind_rows(.x,.y)),
-#     pretotal2  = map2(.x = influ, .y = rota, .f = ~bind_rows(.x,.y)),
-#     
-#     total  = map2(.x = pretotal1, .y = pretotal2, .f = ~bind_rows(.x,.y)),
-#     
-#      hr = map(.x = total,
-#               .f = ~h_prop(.x)),
-# 
-# 
-#      ssirii = map(.x = total,
-#                   .f = ~sii_rii(.x)),
-#     
-# 
-#      graf = map(.x = hr,
-#                 .f = ~gg(.x))
-#     
-#   ) 
-# 
-# # SII y RII por año (2010 - 2020)
-# 
-# df3 %>% select(ANIO,ssirii) %>% 
-#   unnest(cols = c(ssirii)) %>% 
-#   as.data.frame() %>% 
-#   ungroup() %>% 
-#   pivot_longer(cols = c(ssi,rii), names_to = "index") %>% 
-#   
-#   ggplot() +
-#   geom_line(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
-#   geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
-#   
-#   facet_wrap(~index)
-
-  
-# Grafico: tasa vs HR
-#ggsave("tt.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
-
-  
-```
-
-## CRED LUGAR
-
-```{r}
-# df3<-
-#   df2 %>% 
-#   mutate(
-#     
-#     ptv = map(.x =df,
-#               .f = ~svyby(~MOV_PTV_e1, by=~CREDLUGAR, design =.x, FUN=svytotal, na.rm = T) %>% 
-#                 
-#                 mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV") %>% 
-#                 
-#                 select(-MOV_PTV_e1) %>% 
-#                 
-#                 left_join(
-#                   
-#                   svytotal(~CREDLUGAR, design = .x) %>%
-#                     
-#                     data.frame() %>%
-#                     
-#                     rownames_to_column("CREDLUGAR") %>%
-#                     
-#                     mutate(
-#                       CREDLUGAR = substring(CREDLUGAR,10))) %>%
-#                 
-#                 select(CREDLUGAR,total,vacuna,vacunatipo,se,-`SE`)),
-#     
-#     
-#     
-#     neumo = map(.x =df,
-#                 .f = ~svyby(~MOV_NEUMO_e1, by=~CREDLUGAR, design =.x, FUN=svytotal, na.rm = T) %>% 
-#                   
-#                   mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO") %>% 
-#                   
-#                   select(-MOV_NEUMO_e1) %>% 
-#                   
-#                   left_join(
-#                     
-#                     svytotal(~CREDLUGAR, design = .x) %>%
-#                       
-#                       data.frame() %>%
-#                       
-#                       rownames_to_column("CREDLUGAR") %>%
-#                       
-#                       mutate(
-#                         CREDLUGAR = substring(CREDLUGAR,10))) %>%
-#                   
-#                   select(CREDLUGAR,total,vacuna,vacunatipo,se,-`SE`)),
-#     
-#     
-#     influ = map(.x =df,
-#                 .f = ~svyby(~MOV_INFLU_e1, by=~CREDLUGAR, design =.x, FUN=svytotal, na.rm = T) %>% 
-#                   
-#                   mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU") %>% 
-#                   
-#                   select(-MOV_INFLU_e1) %>% 
-#                   
-#                   left_join(
-#                     
-#                     svytotal(~CREDLUGAR, design = .x) %>%
-#                       
-#                       data.frame() %>%
-#                       
-#                       rownames_to_column("CREDLUGAR") %>%
-#                       
-#                       mutate(
-#                         CREDLUGAR = substring(CREDLUGAR,10))) %>%
-#                   
-#                   select(CREDLUGAR,total,vacuna,vacunatipo,se,-`SE`)),
-#     
-#     
-#     rota  = map(.x =df,
-#                 .f = ~svyby(~MOV_ROTA_e1, by=~CREDLUGAR, design =.x, FUN=svytotal, na.rm = T) %>% 
-#                   
-#                   mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA") %>% 
-#                   
-#                   select(-MOV_ROTA_e1) %>% 
-#                   
-#                   left_join(
-#                     
-#                     svytotal(~CREDLUGAR, design = .x) %>%
-#                       
-#                       data.frame() %>%
-#                       
-#                       rownames_to_column("CREDLUGAR") %>%
-#                       
-#                       mutate(
-#                         CREDLUGAR = substring(CREDLUGAR,10))) %>%
-#                   
-#                   select(CREDLUGAR,total,vacuna,vacunatipo,se,-`SE`))) %>% 
-#   
-#   
-#   mutate(
-#     
-#     pretotal1  = map2(.x = ptv, .y = neumo, .f = ~bind_rows(.x,.y)),
-#     pretotal2  = map2(.x = influ, .y = rota, .f = ~bind_rows(.x,.y)),
-#     
-#     total  = map2(.x = pretotal1, .y = pretotal2, .f = ~bind_rows(.x,.y)),
-#     
-#     hr = map(.x = total,
-#              .f = ~h_prop(.x)),
-#     
-#     ssirii = map(.x = total,
-#                  .f = ~sii_rii(.x)),
-#     
-#     
-#     graf = map(.x = hr,
-#                .f = ~gg(.x))
-#     
-#   ) 
-# 
-# # SII y RII por año (2010 - 2020)
-# 
-#   df3 %>% select(ANIO,ssirii) %>% 
-#   unnest(cols = c(ssirii)) %>% 
-#   as.data.frame() %>% 
-#   ungroup() %>% 
-#   pivot_longer(cols = c(ssi,rii), names_to = "index") %>% 
-#   
-#   ggplot() +
-#   geom_line(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
-#   geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
-#   
-#   facet_wrap(~index)
-# 
-# # Grafico: tasa vs HR
-# ggsave("qq.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
-
-
-  
-```
-
-## EDAD MADRE
-
-```{r}
-# df3<-
-#   df2 %>% 
-#   mutate(
-#     
-#     ptv = map(.x =df,
-#               .f = ~svyby(~MOV_PTV_e1, by=~EDAD_MADRE, design =.x, FUN=svytotal, na.rm = T) %>% 
-#                 
-#                 mutate(vacuna = MOV_PTV_e1,vacunatipo = "PTV") %>% 
-#                 
-#                 select(-MOV_PTV_e1) %>% 
-#                 
-#                 left_join(
-#                   
-#                   svytotal(~EDAD_MADRE, design = .x, na.rm = T) %>%
-#                     
-#                     data.frame() %>%
-#                     
-#                     rownames_to_column("EDAD_MADRE") %>%
-#                     
-#                     mutate(
-#                       EDAD_MADRE = substring(EDAD_MADRE,11))) %>%
-#                 
-#                 select(EDAD_MADRE,total,vacuna,vacunatipo,se,-`SE`)),
-#     
-#     
-#     
-#     neumo = map(.x =df,
-#                 .f = ~svyby(~MOV_NEUMO_e1, by=~EDAD_MADRE, design =.x, FUN=svytotal, na.rm = T) %>% 
-#                   
-#                   mutate(vacuna = MOV_NEUMO_e1,vacunatipo = "NEUMO") %>% 
-#                   
-#                   select(-MOV_NEUMO_e1) %>% 
-#                   
-#                   left_join(
-#                   
-#                   svytotal(~EDAD_MADRE, design = .x, na.rm = T) %>%
-#                     
-#                     data.frame() %>%
-#                     
-#                     rownames_to_column("EDAD_MADRE") %>%
-#                     
-#                     mutate(
-#                       EDAD_MADRE = substring(EDAD_MADRE,11))) %>%
-#                 
-#                 select(EDAD_MADRE,total,vacuna,vacunatipo,se,-`SE`)),
-#     
-#     
-#     influ = map(.x =df,
-#                 .f = ~svyby(~MOV_INFLU_e1, by=~EDAD_MADRE, design =.x, FUN=svytotal, na.rm = T) %>% 
-#                   
-#                   mutate(vacuna = MOV_INFLU_e1,vacunatipo = "INFLU") %>% 
-#                   
-#                   select(-MOV_INFLU_e1) %>% 
-#                   
-#                   left_join(
-#                   
-#                   svytotal(~EDAD_MADRE, design = .x, na.rm = T) %>%
-#                     
-#                     data.frame() %>%
-#                     
-#                     rownames_to_column("EDAD_MADRE") %>%
-#                     
-#                     mutate(
-#                       EDAD_MADRE = substring(EDAD_MADRE,11))) %>%
-#                 
-#                 select(EDAD_MADRE,total,vacuna,vacunatipo,se,-`SE`)),
-#     
-#     
-#     rota  = map(.x =df,
-#                 .f = ~svyby(~MOV_ROTA_e1, by=~EDAD_MADRE, design =.x, FUN=svytotal, na.rm = T) %>% 
-#                   
-#                   mutate(vacuna = MOV_ROTA_e1,vacunatipo = "ROTA") %>% 
-#                   
-#                   select(-MOV_ROTA_e1) %>% 
-#                   
-#                   left_join(
-#                   
-#                   svytotal(~EDAD_MADRE, design = .x, na.rm = T) %>%
-#                     
-#                     data.frame() %>%
-#                     
-#                     rownames_to_column("EDAD_MADRE") %>%
-#                     
-#                     mutate(
-#                       EDAD_MADRE = substring(EDAD_MADRE,11))) %>%
-#                 
-#                 select(EDAD_MADRE,total,vacuna,vacunatipo,se,-`SE`))) %>% 
-#   
-#   
-#   mutate(
-#     
-#     pretotal1  = map2(.x = ptv, .y = neumo, .f = ~bind_rows(.x,.y)),
-#     pretotal2  = map2(.x = influ, .y = rota, .f = ~bind_rows(.x,.y)),
-#     
-#     total  = map2(.x = pretotal1, .y = pretotal2, .f = ~bind_rows(.x,.y)),
-#     
-#     hr = map(.x = total,
-#              .f = ~h_prop(.x)),
-#     
-#     ssirii = map(.x = total,
-#                  .f = ~sii_rii(.x)),
-#     
-#     
-#     graf = map(.x = hr,
-#                .f = ~gg(.x))
-#     
-#   ) 
-# 
-# 
-# # SII y RII por año (2010 - 2020)
-# 
-#   df3 %>% select(ANIO,ssirii) %>% 
-#   unnest(cols = c(ssirii)) %>% 
-#   as.data.frame() %>% 
-#   ungroup() %>% 
-#   mutate(
-#     rii.pct = (rii-1)*100
-#   ) %>% 
-#   
-#   pivot_longer(cols = c(rii.pct,ssi), names_to = "index") %>% 
-#   
-#   ggplot() +
-#   geom_line(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
-#   geom_point(aes(x = as.factor(ANIO), y = value, col = vacunatipo, group = vacunatipo)) +
-#   facet_wrap(~index)
-# 
-# # Grafico: tasa vs HR
-# ggsave("uu.png",cowplot::plot_grid(plotlist = df3$graf), width = 18, height = 15)
-
-
-```
