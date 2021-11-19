@@ -38,6 +38,8 @@ df2<-MOV_GENERAL %>%
 options(survey.lonely.psu="remove")
 
 
+table(MOV_GENERAL$V190,MOV_GENERAL$INDICERIQUEZA, exclude = NULL)
+
 ```
 
 # EVENTO: GENERAL
@@ -209,7 +211,7 @@ df3<-
   ggplot(aes(x = ANIO, y = ssi, group = vacunatipo)) +
   
   geom_line(aes(color = vacunatipo), size = 1.2) +
-  geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=vacunatipo), width = 0.2, size = 0.7)+
+  geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=vacunatipo), width = 0.2, alpha = 0.3)+
   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
   
   scale_color_npg(alpha = 0.7)+
@@ -222,7 +224,7 @@ df3<-
   theme(
     axis.title = element_text(face ="bold", size = 11),
     legend.text = element_text(size = 10, face = "bold"),
-    axis.text = element_text(face = "bold", size = 10),
+    axis.text = element_text(face = "bold", size = 9),
     legend.position = "top",
     legend.title = element_blank(),
     #axis.line = element_line(colour = "black", size = 1),
@@ -421,7 +423,7 @@ ssi.ir<-
   ggplot(aes(x = ANIO, y = ssi, group = vacunatipo)) +
   
   geom_line(aes(color = vacunatipo), size = 1.2) +
-  geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=vacunatipo), width = 0.2, size = 0.7)+
+  geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=vacunatipo), width = 0.2, alpha = 0.3)+
   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
   
   scale_color_npg(alpha = 0.7)+
@@ -434,7 +436,7 @@ ssi.ir<-
   theme(
     axis.title = element_text(face ="bold", size = 11),
     legend.text = element_text(size = 10, face = "bold"),
-    axis.text = element_text(face = "bold", size = 10),
+   axis.text = element_text(face = "bold", size = 9),
     legend.position = "top",
     legend.title = element_blank(),
     #axis.line = element_line(colour = "black", size = 1),

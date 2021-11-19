@@ -114,16 +114,158 @@ t<- df2 %>%
 
 
 
-#####################################################3
+#####################################################
+
+sii_rii_map<-function(data) {
+  
+  
+  bd <- data.frame(hr2 = c(0,100))
+  
+  
+  data<-
+    g$data[[2]] %>% 
+    
+    group_by(DEPARTAMEN,vacunatipo) %>% 
+    
+    mutate(
+      tasa = (vacuna/total)*10000
+    ) %>% 
+    
+    # ordenar de - a +
+    arrange(orden,.by_group = T) %>% 
+    
+    # Calculo de hr
+    mutate(pop= vacuna/sum(vacuna),
+           
+           popr = cumsum(pop)/sum(pop),
+           pop.popr = popr - pop,
+           hr2 = round((pop.popr + popr)/2,3)
+    ) %>% 
+    
+    select(-pop,-popr,-pop.popr) %>% 
+    
+    
+    #group_by(DEPARTAMEN,vacunatipo) %>% 
+    
+    nest() %>% 
+    
+    mutate(
+      
+      # lm para ssi 
+      modelo = map(.x = data, 
+                   .f = ~glm(formula = tasa~hr2, data = .x, family = poisson(), weights = total)),
+      
+      # extraer beta
+      modelo2 = map(.x = modelo, 
+                    .f = ~tidy(lmtest::coeftest(.x, vcov = vcovHC, 
+                                                type = "HC3"), conf.int = T))
+      
+    ) %>% 
+    
+    #ungroup() %>% 
+    
+    unnest(cols = c(modelo2)) %>% 
+    
+    slice(2) %>%
+    
+    # rri f(1)/f(0)
+    mutate(
+      # rii = map_dbl(.x = modelo,
+      #                    .f =~predict(.x,
+      #                                 newdata = bd %>% filter(hr2 == 100))/predict(.x,newdata = bd %>% filter(hr2 == 0))),
+           
+           sii = estimate,
+           sii_l = conf.low,
+           sii_h = conf.high) %>% 
+    
+    # mutate(sii = round(sii,2),
+    #        rii = round(rii,1)) 
+  
+  select(vacunatipo,term,sii,sii_l,sii_h)
+  
+  data
+  
+}
+
+######################
 
 g<-
   t %>% 
+  unnest(cols = c("total")) %>% 
+  group_by(ANIO,JUNTOS) %>% 
+  nest() %>% 
 
   mutate(
-    hr = map(.x = total,
-             .f = ~h_prop.map(.x)),
+
+    sii = map(.x = data,
+              .f = ~h_prop.map(.x)),
     
-   
-    sii = map(.x = total,
-              .f = ~sii_rii_map(.x))
+    
+    ssi2 = map(.x = data, 
+               .f = ~sii_rii_map(.x))
+
+    
   ) 
+
+
+######################################
+
+
+df4<-g %>% 
+  select(ANIO,ssi2) %>% 
+  unnest(cols = c(ssi2)) %>%
+  filter(JUNTOS==0) %>% 
+  
+  
+  left_join(region_shape, by = "DEPARTAMEN") %>% 
+  #left_join(centroid) %>% 
+  
+  mutate(
+    line = ifelse(p.value <0.05,"bold.italic","plain"),
+    size = ifelse(p.value > 0.05,0.9,1)
+  ) %>% 
+  
+  group_by(vacunatipo) %>% 
+  
+  st_as_sf()
+
+
+df4<-
+  df4 %>% 
+  
+  nest() %>% 
+  
+  mutate(
+    
+    grafico = map(.x = data,
+                  .f = ~ggplot(data = .x %>%
+                                 
+                                 filter(ANIO%in%c(2010,2015,2019,2020)), aes( alpha =size)) +
+                    
+                    geom_sf(aes(fill=sii), size = 0.2) +
+                    geom_text(aes(x = X, y = Y, label = CAP), size = 1.5)+
+                    
+                    
+                    scale_fill_gradient2(mid="#FBFEF9",low="#0C6291",high="#A63446", limits = c(-6,6))+
+                    
+                    
+                    guides(fill = guide_colourbar(barheight = 0.5, 
+                                                  barwidth = 20,
+                                                  title.position = "top",
+                                                  direction = "horizontal"),
+                           
+                           alpha = "none")+
+                    
+                    facet_wrap(~ANIO, ncol = 4)+
+                    
+                    labs(fill = "Slope Index of Inequality (Income Quintile)") +
+                    
+                    theme(axis.title = element_blank(),
+                          axis.text.x = element_text(angle = 30, size = 6),
+                          strip.background = element_blank(),
+                          panel.background = element_blank(),
+                          strip.text = element_text(face = "bold"),
+                          legend.position = "bottom",
+                          legend.title = element_text(size = 9, face = "bold"),
+                          legend.key.size = unit(0.5, 'cm'))
+    ))
