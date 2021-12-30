@@ -354,10 +354,10 @@ rota1<-
  rbind(ptv1,neumo1,influ1,rota1) %>% 
    as.data.frame() %>% 
    mutate(
-     vacunatipo = case_when(vacunatipo == "ptv1" ~ "PTV1",
-                            vacunatipo == "neumo1" ~ "NM1",
-                            vacunatipo == "influ1" ~ "INFLU1",
-                            vacunatipo == "rota1" ~ "ROTA1")
+     vacunatipo = case_when(vacunatipo == "ptv1" ~ "PTV",
+                            vacunatipo == "neumo1" ~ "NEUMO",
+                            vacunatipo == "influ1" ~ "INFLU",
+                            vacunatipo == "rota1" ~ "ROTA")
    ) %>% 
   ungroup() %>%
   ggplot(aes(x = ANIO, y = vacuna*100,
@@ -1254,10 +1254,10 @@ rota1<-
 rbind(ptv1,neumo1,influ1,rota1) %>% 
    as.data.frame() %>% 
    mutate(
-     vacunatipo = case_when(vacunatipo == "ptv1" ~ "PTV1",
-                            vacunatipo == "neumo1" ~ "NM1",
-                            vacunatipo == "influ1" ~ "INFLU1",
-                            vacunatipo == "rota1" ~ "ROTA1")
+     vacunatipo = case_when(vacunatipo == "ptv1" ~ "PTV",
+                            vacunatipo == "neumo1" ~ "NEUMO",
+                            vacunatipo == "influ1" ~ "INFLU",
+                            vacunatipo == "rota1" ~ "ROTA")
    ) %>% 
   ggplot(aes(x = ANIO, y = vacuna*100, 
              ymin = ci_l*100, ymax = ci_h*100, group = vacunatipo))+

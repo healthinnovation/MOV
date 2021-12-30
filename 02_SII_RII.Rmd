@@ -683,7 +683,7 @@ centroid<- region_shape %>%
     
     facet_wrap(~ANIO, ncol = 4)+
   
-  labs(fill = "Slope Index of Inequality (Income Quintile)") +
+  labs(fill = "Slope Index of Inequality (Wealth Index)") +
   
   theme(axis.title = element_blank(),
         axis.text.x = element_text(angle = 30, size = 6),
@@ -956,7 +956,7 @@ centroid<- region_shape %>%
     
     facet_wrap(~ANIO, ncol = 4)+
   
-  labs(fill = "Slope Index of Inequality (Income Quintile)") +
+  labs(fill = "Slope Index of Inequality (Maternal education)") +
   
   theme(axis.title = element_blank(),
         axis.text.x = element_text(angle = 30, size = 6),
