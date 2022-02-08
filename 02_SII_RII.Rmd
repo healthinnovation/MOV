@@ -981,6 +981,12 @@ plot_grid(g1,g2,g3,g4,legend, ncol = 1, labels = c("A","B","C","D"), rel_heights
 
 
  ggsave("Fig7.png",width = 10,height = 15)
+ 
+#  
+#  plot_grid(g1,g2,g3,g4,legend, nrow = 3, labels = c("A","B","C","D"), rel_heights = c(1,1,0.1))
+# 
+# 
+# ggsave("SFigure2.png",width = 16,height = 10)
 ```
 
 #### Moran's I - ME
