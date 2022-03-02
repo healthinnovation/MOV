@@ -391,7 +391,7 @@ rota1<-
     panel.grid = element_blank()
   )
              
-ggsave("Fig1.png",width = 8, height = 6)           
+ggsave("Fig1.png",width = 8, height = 6, dpi = 300)           
 
 ```
 
@@ -495,9 +495,9 @@ MOV_GENERAL %>%
 #ggsave("figura2b.png", width = 8, height = 4)
   
 
-figura2<-cowplot::plot_grid(figura2a,figura2b, ncol = 1, labels = c("A","B"), rel_heights = c(0.6,0.4))
+figura2<-cowplot::plot_grid(figura2a,figura2b, ncol = 1, labels = c("a","b"), rel_heights = c(0.6,0.4))
 
-ggsave("figura2.png", height = 9, width = 8.5)
+ggsave("figura2.png", height = 9, width = 8.5, dpi = 300)
 ```
 
 
@@ -1289,7 +1289,7 @@ rbind(ptv1,neumo1,influ1,rota1) %>%
   ) 
 
 
-ggsave("Fig3.png",width = 8, height = 6)  
+ggsave("Fig3.png",width = 8, height = 6, dpi = 300)  
 ```
 
 # REGION / DOSIS

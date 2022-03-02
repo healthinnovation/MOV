@@ -38,7 +38,7 @@ df2<-MOV_GENERAL %>%
 options(survey.lonely.psu="remove")
 
 
-table(MOV_GENERAL$V190,MOV_GENERAL$INDICERIQUEZA, exclude = NULL)
+
 
 ```
 
@@ -704,10 +704,10 @@ g4<-plot_grid(df4$grafico[[4]] + theme(legend.position = "none"))
 
 legend<- get_legend(df4$grafico[[1]])
 
-plot_grid(g1,g2,g3,g4,legend, ncol = 1, labels = c("A","B","C","D"), rel_heights = c(.8,.8,.8,.8,.2))
+plot_grid(g1,g2,g3,g4,legend, ncol = 1, labels = c("a","b","c","d"), rel_heights = c(.8,.8,.8,.8,.2))
 
 
- ggsave("Fig6.png",width = 10,height = 15)
+ ggsave("Fig6.png",width = 10,height = 15, dpi = 300)
 
 
 ```
@@ -977,10 +977,10 @@ g4<-plot_grid(df4$grafico[[4]] + theme(legend.position = "none"))
 
 legend<- get_legend(df4$grafico[[1]])
 
-plot_grid(g1,g2,g3,g4,legend, ncol = 1, labels = c("A","B","C","D"), rel_heights = c(.8,.8,.8,.8,.2))
+plot_grid(g1,g2,g3,g4,legend, ncol = 1, labels = c("a","b","c","d"), rel_heights = c(.8,.8,.8,.8,.2))
 
 
- ggsave("Fig7.png",width = 10,height = 15)
+ ggsave("Fig7.png",width = 10,height = 15, dpi = 300)
  
 #  
 #  plot_grid(g1,g2,g3,g4,legend, nrow = 3, labels = c("A","B","C","D"), rel_heights = c(1,1,0.1))
@@ -1065,9 +1065,9 @@ ssi.ir<- ssi.ir + theme(legend.position = "none")
 graficoa<-plot_grid(moran.me,ssi.edu, ncol = 1, rel_heights = c(.4,1))
 graficob<-plot_grid(moran.ir,ssi.ir, ncol = 1, rel_heights = c(.4,1), rel_widths = c(1,1))
 
-cowplot::plot_grid(graficoa,graficob, ncol = 1, labels = c("A","B"), rel_heights = c(1,1,0.1))
+cowplot::plot_grid(graficoa,graficob, ncol = 1, labels = c("a","b"), rel_heights = c(1,1,0.1))
 
-ggsave("Fig4.png", width =11, height = 15)
+ggsave("Fig4.png", width =11, height = 15, dpi = 300)
 ```
 
 # EVENTO: ANALISIS POR PROGRAMA JUNTOS
@@ -1396,7 +1396,7 @@ programa.df<-bind_rows(riq,edu) %>%
 ggplot(aes(x = ANIO, y = ssi, group = JUNTOS)) +
   
   geom_line(aes(color = JUNTOS), size = 1.2) +
- geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=JUNTOS), width = 0.2, size = 0.7)+
+ #geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=JUNTOS), width = 0.2, size = 0.7)+
   
   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
   
@@ -1419,7 +1419,7 @@ ggplot(aes(x = ANIO, y = ssi, group = JUNTOS)) +
     strip.text = element_text(face = "bold", size = 9),
     panel.spacing = unit(1.5,"lines")
   ) +
-  facet_grid(JUNTOS+estrato~vacunatipo, scales="free")
+  facet_grid(estrato~vacunatipo, scales="free")
 ```
 
 
@@ -1753,7 +1753,7 @@ vivienda.df<-bind_rows(riq,edu) %>%
 ggplot(aes(x = ANIO, y = ssi, group = TIPORESIDENCIA)) +
   
   geom_line(aes(color = TIPORESIDENCIA), size = 1.2) +
- geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=TIPORESIDENCIA), width = 0.2, size = 0.7)+
+ #geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=TIPORESIDENCIA), width = 0.2, size = 0.7)+
   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
   
   scale_color_npg(alpha = 0.7)+
@@ -1775,7 +1775,7 @@ ggplot(aes(x = ANIO, y = ssi, group = TIPORESIDENCIA)) +
     strip.text = element_text(face = "bold", size = 9),
     panel.spacing = unit(1.5,"lines")
   ) +
-  facet_grid(TIPORESIDENCIA+estrato~vacunatipo, scales="free")
+  facet_grid(estrato~vacunatipo, scales="free")
 ```
 
 
@@ -2115,7 +2115,7 @@ tipocred<-
   ggplot(aes(x = ANIO, y = ssi, group = tiposeguro)) +
   
   geom_line(aes(color = tiposeguro), size = 1.2) +
- geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=tiposeguro), width = 0.2, size = 0.7)+
+ #geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=tiposeguro), width = 0.2, size = 0.7)+
   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
   
   scale_color_npg(alpha = 0.7)+
@@ -2137,7 +2137,7 @@ tipocred<-
     strip.text = element_text(face = "bold", size = 9),
     panel.spacing = unit(1.5,"lines")
   ) +
-  facet_grid(tiposeguro+estrato~vacunatipo, scales="free")
+  facet_grid(estrato~vacunatipo, scales="free")
 
 ```
 
@@ -2155,9 +2155,9 @@ p3<- plot_grid(tipocred + theme(legend.position = "top"))
 
 legend<- get_legend(programa.df)
 
-plot_grid(p1,p2,p3, cols = 1,labels = c("A","B","C"), rel_heights = c(1,1,1,.1))
+plot_grid(p1,p2,p3, cols = 1,labels = c("a","b","c"), rel_heights = c(1,1,1,.1))
 
-ggsave("panel_sii.png",height = 20, width = 17)
+ggsave("panel_sii.png",height = 11, width = 17, dpi = 300)
 
 ```
 
