@@ -9,7 +9,7 @@ This is the first study published in Peru that uses 11-year DHS to describe the 
 
 ## Repository structure
 
-1. [NewData](https://github.com/healthinnovation/MOV/tree/main/BD.INTERMEDIAS) -  databases created from the raw data of the 2010 - 2020 ENDES surveys.
+1. [NewData](https://github.com/healthinnovation/MOV/tree/main/NewData) -  databases created from the raw data of the 2010 - 2020 ENDES surveys.
 2. [ENDES](https://github.com/healthinnovation/MOV/tree/main/ENDES) - Raw data from ENDES surveys for the period 2010 - 2020.
 3. [Figures](https://github.com/healthinnovation/MOV/tree/main/Figures) - Figures in the main text
     - Fig1: Vaccination coverage 2010-2020. 
