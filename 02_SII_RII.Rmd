@@ -23,7 +23,7 @@ region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 
 ```{r}
 # Base de trabajo
-MOV_GENERAL <- read.csv("./BD.INTERMEDIAS/mov_general.csv")
+MOV_GENERAL <- read.csv("./NewData/mov_general.csv")
 
 df2<-MOV_GENERAL %>% 
   
@@ -1074,7 +1074,7 @@ ggsave("Fig4.png", width =11, height = 15, dpi = 300)
 
 ```{r}
 
-MOV_GENERAL <- read.csv("./BD.INTERMEDIAS/mov_general.csv")
+MOV_GENERAL <- read.csv("./NewData/mov_general.csv")
 
 df2<-MOV_GENERAL %>% 
   
@@ -1427,7 +1427,7 @@ ggplot(aes(x = ANIO, y = ssi, group = JUNTOS)) +
 
 ```{r}
 
-MOV_GENERAL <- read.csv("./BD.INTERMEDIAS/mov_general.csv")
+MOV_GENERAL <- read.csv("./NewData/mov_general.csv")
 
 df2<-MOV_GENERAL %>% 
   
@@ -1782,7 +1782,7 @@ ggplot(aes(x = ANIO, y = ssi, group = TIPORESIDENCIA)) +
 #EVENTO: ANALISIS POR TIPO DE SEGURO
 
 ```{r}
-MOV_GENERAL <- read.csv("./BD.INTERMEDIAS/mov_general.csv")
+MOV_GENERAL <- read.csv("./NewData/mov_general.csv")
 
 df2<-MOV_GENERAL %>% 
   
