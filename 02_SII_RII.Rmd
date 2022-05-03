@@ -193,7 +193,7 @@ df3<-
     
   )  
 
- 
+
 ```
 
 ## Graficos
@@ -282,9 +282,39 @@ temp2<-
                          facet_wrap(~vacunatipo, scales = "free")))
 
 
-# cowplot::plot_grid(plotlist = temp2$grafico)
-# 
-# ggsave("cols_slope_education.png", width = 13, height = 9)
+
+
+test<-
+  df3 %>% select(ANIO,ssirii) %>% 
+  unnest() %>% 
+  as.data.frame() %>%
+  mutate(
+    eco_chr = "edu"
+  ) %>% 
+  as.data.frame() %>% 
+  mutate(
+    across(.cols = c(sii_l,sii_h,ssi), .fns = ~round(.x,4)*100),
+    estimate = paste0(ssi," ","(",sii_l," ","-"," ",sii_h,")"),
+    vacunatipo = case_when(vacunatipo == "PTV" ~ "Pentavalent",
+                           vacunatipo == "ROTA" ~ "Rotavirus",
+                           vacunatipo == "NEUMO" ~ "Pneumo",
+                           vacunatipo == "INFLU" ~ "Influenza")
+  )
+
+test %>%
+  ggplot(aes(x = as.factor(ANIO), y = vacunatipo, fill = ssi))+
+  geom_tile()+
+  scale_fill_gradient2(high  ="#0C6291",low = "#A63446", midpoint = 0) + 
+  geom_text(aes(label = formatC(estimate, format = "f", digits = 2)), size = 3)+
+  labs(fill = "", y = "SII - Maternal education")+
+  theme_minimal()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(face = "bold", margin = margin(r = 10)),
+    axis.text = element_text(face = "bold"),
+    legend.position = "none")
+
+ggsave("Fig-Supplementaltable.png",width = 14, height = 4, dpi = 300)
 
 ```
 
@@ -493,9 +523,39 @@ temp2<-
                          facet_wrap(~vacunatipo, scales = "free")))
 
 # 
-# cowplot::plot_grid(plotlist = temp2$grafico)
-# 
-# ggsave("cols_slope_RIQ.png", width = 13, height = 9)
+
+
+test<-
+  df3 %>% select(ANIO,ssirii) %>% 
+  unnest() %>% 
+  as.data.frame() %>%
+  mutate(
+    eco_chr = "edu"
+  ) %>% 
+  as.data.frame() %>% 
+  mutate(
+    across(.cols = c(sii_l,sii_h,ssi), .fns = ~round(.x,4)*100),
+    estimate = paste0(ssi," ","(",sii_l," ","-"," ",sii_h,")"),
+    vacunatipo = case_when(vacunatipo == "PTV" ~ "Pentavalent",
+                           vacunatipo == "ROTA" ~ "Rotavirus",
+                           vacunatipo == "NEUMO" ~ "Pneumo",
+                           vacunatipo == "INFLU" ~ "Influenza")
+  )
+
+test %>%
+  ggplot(aes(x = as.factor(ANIO), y = vacunatipo, fill = ssi))+
+  geom_tile()+
+  scale_fill_gradient2(high  ="#0C6291",low = "#A63446", midpoint = 0) + 
+  geom_text(aes(label = formatC(estimate, format = "f", digits = 2)), size = 3)+
+  labs(fill = "", y = "SII - Maternal education")+
+  theme_minimal()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(face = "bold", margin = margin(r = 10)),
+    axis.text = element_text(face = "bold"),
+    legend.position = "none")
+
+ggsave("Figb-Supplementaltable.png",width = 14, height = 4, dpi = 300)
 
 
 ```
