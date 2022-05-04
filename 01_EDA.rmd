@@ -394,9 +394,10 @@ rota1<-
 #ggsave("Fig1.png",width = 8, height = 6, dpi = 300)           
 
 
-test <-  rbind(ptv1,neumo1,influ1,rota1)
+coverage1 <-  rbind(ptv1,neumo1,influ1,rota1)
 
-test2 <- test %>% 
+coverage1 <- 
+  coverage1 %>% 
   mutate(
     across(.cols = c(ci_l,ci_h,vacuna), .fns = ~round(.x,2)*100),
     estimate = paste0(vacuna," ","(",ci_l,"-",ci_h,")"),
@@ -405,20 +406,7 @@ test2 <- test %>%
                            vacunatipo == "neumo1" ~ "Pneumo",
                            vacunatipo == "influ1" ~ "Influenza")
   )
-test2 %>% 
-  ggplot(aes(x = as.factor(ANIO), y = vacunatipo, fill = vacuna))+
-  geom_tile(alpha = 0.9)+
-  scale_fill_gradient2(high  ="#0C6291",low = "#A63446") + 
-  geom_text(aes(label = formatC(estimate, format = "f", digits = 2)), size = 3)+
-  theme_minimal()+
-  labs(fill = "", y = "Vaccine coverage")+
-  theme(
-    axis.title.x = element_blank(),
-    axis.title.y = element_text(face = "bold", margin = margin(r = 10)),
-    axis.text = element_text(face = "bold"),
-    legend.position = "none")
-
-ggsave("Fig1-Supplementaltable.png",width = 10, height = 4, dpi = 300)   
+ 
 ```
 
 # ggupset DE LAS 3 DOSIS DE VACUNACION 
@@ -1318,9 +1306,9 @@ rbind(ptv1,neumo1,influ1,rota1) %>%
 #ggsave("Fig3.png",width = 8, height = 6, dpi = 300)  
 
 
-test <- rbind(ptv1,neumo1,influ1,rota1)
+mov <- rbind(ptv1,neumo1,influ1,rota1)
 
-test2 <- test %>% 
+mov <- mov %>% 
   mutate(
     across(.cols = c(ci_l,ci_h,vacuna), .fns = ~round(.x,2)*100),
     estimate = paste0(vacuna," ","(",ci_l,"-",ci_h,")"),
@@ -1329,21 +1317,7 @@ test2 <- test %>%
                            vacunatipo == "neumo1" ~ "Pneumo",
                            vacunatipo == "influ1" ~ "Influenza")
   )
-test2 %>% 
-  ggplot(aes(x = as.factor(ANIO), y = vacunatipo, fill = vacuna))+
-  geom_tile(alpha = 0.9)+
-  scale_fill_gradient2(high  ="#0C6291",low = "#91a5b1") + 
-  geom_text(aes(label = formatC(estimate, format = "f", digits = 2)), size = 3)+
-  theme_minimal()+
-  labs(fill = "", y = "Missed Oportunities for Vaccination")+
-  theme(
-    axis.title.x = element_blank(),
-    axis.title.y = element_text(face = "bold", margin = margin(r = 10)),
-    axis.text = element_text(face = "bold"),
-    legend.position = "none")
 
-
-ggsave("Fig3-Supplementaltable.png",width = 10, height = 4, dpi = 300)  
 ```
 
 # REGION / DOSIS
