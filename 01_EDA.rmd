@@ -365,6 +365,7 @@ rota1<-
 
   geom_line(aes(color = vacunatipo), size = 1.5) +
   geom_ribbon(aes(fill = vacunatipo), alpha = 0.1)+
+  geom_vline(aes(xintercept = 2015), linetype = "dashed") + 
   
   scale_color_npg(alpha = 0.7)+
   scale_fill_npg()+
@@ -373,7 +374,7 @@ rota1<-
   scale_x_continuous(expand = c(0, 0), breaks = c(2010:2020), limits = c(2010,2020.1))+
   ylab("Prop. %")+
 
-  geom_hline(aes(yintercept = 85), linetype = "dashed") +
+ # geom_hline(aes(yintercept = 85), linetype = "dashed") +
    
    theme_bw()+
 
@@ -391,7 +392,7 @@ rota1<-
     panel.grid = element_blank()
   )
              
-#ggsave("Fig1.png",width = 8, height = 6, dpi = 300)           
+ggsave("Fig1.png",width = 8, height = 6, dpi = 300)           
 
 
 coverage1 <-  rbind(ptv1,neumo1,influ1,rota1)
@@ -399,7 +400,7 @@ coverage1 <-  rbind(ptv1,neumo1,influ1,rota1)
 coverage1 <- 
   coverage1 %>% 
   mutate(
-    across(.cols = c(ci_l,ci_h,vacuna), .fns = ~round(.x,2)*100),
+    across(.cols = c(ci_l,ci_h,vacuna), .fns = ~round(.x,3)*100),
     estimate = paste0(vacuna," ","(",ci_l,"-",ci_h,")"),
     vacunatipo = case_when(vacunatipo == "ptv1" ~ "Pentavalent",
                            vacunatipo == "rota1" ~ "Rotavirus",
@@ -1278,6 +1279,7 @@ rbind(ptv1,neumo1,influ1,rota1) %>%
   
   geom_line(aes(color = vacunatipo), size = 1.5) +
   geom_ribbon(aes(fill = vacunatipo), alpha = 0.1)+
+  geom_vline(aes(xintercept = 2015), linetype = "dashed") + 
   
   scale_color_npg(alpha = 0.7)+
   scale_fill_npg()+
@@ -1303,14 +1305,14 @@ rbind(ptv1,neumo1,influ1,rota1) %>%
   ) 
 
 
-#ggsave("Fig3.png",width = 8, height = 6, dpi = 300)  
+ggsave("Fig3.png",width = 8, height = 6, dpi = 300)  
 
 
 mov <- rbind(ptv1,neumo1,influ1,rota1)
 
 mov <- mov %>% 
   mutate(
-    across(.cols = c(ci_l,ci_h,vacuna), .fns = ~round(.x,2)*100),
+    across(.cols = c(ci_l,ci_h,vacuna), .fns = ~round(.x,3)*100),
     estimate = paste0(vacuna," ","(",ci_l,"-",ci_h,")"),
     vacunatipo = case_when(vacunatipo == "ptv1" ~ "Pentavalent",
                            vacunatipo == "rota1" ~ "Rotavirus",

@@ -224,9 +224,11 @@ edu1<-
   unnest() %>% 
   as.data.frame() %>%
   mutate(
-    eco_chr = "edu"
+    eco_chr = "edu",
+
   ) %>% 
   ggplot(aes(x = ANIO, y = ssi, group = vacunatipo)) +
+  geom_rect(aes(xmin = 2015, xmax = Inf, ymin = -Inf, ymax = Inf), fill ="#edeeec")+
   
   geom_line(aes(color = vacunatipo), size = 1.2) +
   geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=vacunatipo), width = 0.2, alpha = 0.3)+
@@ -439,6 +441,8 @@ ssi.ir<-
   ) %>% 
   
   ggplot(aes(x = ANIO, y = ssi, group = vacunatipo)) +
+  
+  geom_rect(aes(xmin = 2015, xmax = Inf, ymin = -Inf, ymax = Inf), fill ="#edeeec")+
   
   geom_line(aes(color = vacunatipo), size = 1.2) +
   geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=vacunatipo), width = 0.2, alpha = 0.3)+
@@ -794,6 +798,10 @@ data2<-
 
 moran.ir<-
   data2 %>% 
+   mutate(
+    ANIO = as.character(ANIO),
+    ANIO = ifelse(ANIO == "2015", paste0(ANIO,"*"),ANIO)
+  ) %>% 
   ggplot(aes(x = as.factor(ANIO), y = vacunatipo, fill = moran.t, alpha = alpha))+
   geom_tile()+
   #scale_x_discrete(position = "top") +
@@ -1069,6 +1077,10 @@ data2<-
 
 moran.me<-
   data2 %>% 
+  mutate(
+    ANIO = as.character(ANIO),
+    ANIO = ifelse(ANIO == "2015", paste0(ANIO,"*"),ANIO)
+  ) %>% 
   ggplot(aes(x = as.factor(ANIO), y = vacunatipo, fill = moran.t, alpha = alpha))+
   geom_tile()+
   #scale_x_discrete(position = "top") +
@@ -1097,7 +1109,7 @@ legend <- get_legend(ssi.edu)
 ssi.edu<- ssi.edu + theme(legend.position = "none")
 ssi.ir<- ssi.ir + theme(legend.position = "none")
 
-graficoa<-plot_grid(moran.me,ssi.edu, ncol = 1, rel_heights = c(.4,1))
+graficoa<-plot_grid(moran.me, ssi.edu, ncol = 1, rel_heights = c(.4,1))
 graficob<-plot_grid(moran.ir,ssi.ir, ncol = 1, rel_heights = c(.4,1), rel_widths = c(1,1))
 
 cowplot::plot_grid(graficoa,graficob, ncol = 1, labels = c("a","b"), rel_heights = c(1,1,0.1))
