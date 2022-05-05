@@ -704,7 +704,9 @@ centroid<- region_shape %>%
     grafico = map(.x = data,
                   .f = ~ggplot(data = .x %>%
                                  
-         filter(ANIO%in%c(2010,2015,2019,2020)), aes( alpha =size)) +
+         filter(ANIO%in%c(2010,2015,2019,2020)) %>% 
+           mutate(ANIO = as.character(ANIO),
+                  ANIO = ifelse(ANIO == "2015", paste0(ANIO,"*"),ANIO)), aes( alpha =size)) +
            
   geom_sf(aes(fill=sii), size = 0.2) +
   geom_text(aes(x = X, y = Y, label = CAP), size = 1.5)+
@@ -789,7 +791,7 @@ library(spdep)
  
  
 
-data2<-
+data3<-
    data %>% 
   select(ANIO,vacunatipo,moran.t,moran.p) %>% 
   mutate(
@@ -981,7 +983,9 @@ centroid<- region_shape %>%
     grafico = map(.x = data,
                   .f = ~ggplot(data = .x %>%
                                  
-         filter(ANIO%in%c(2010,2015,2019,2020)), aes( alpha =size)) +
+         filter(ANIO%in%c(2010,2015,2019,2020)) %>% 
+           mutate(ANIO = as.character(ANIO),
+                  ANIO = ifelse(ANIO == "2015", paste0(ANIO,"*"),ANIO)), aes( alpha =size)) +
            
   geom_sf(aes(fill=sii), size = 0.2) +
   geom_text(aes(x = X, y = Y, label = CAP), size = 1.5)+
@@ -1441,10 +1445,8 @@ programa.df<-bind_rows(riq,edu) %>%
   ) %>% 
   
 ggplot(aes(x = ANIO, y = ssi, group = JUNTOS)) +
-  
+   geom_rect(aes(xmin = 2015, xmax = Inf, ymin = -Inf, ymax = Inf), fill ="#edeeec")+
   geom_line(aes(color = JUNTOS), size = 1.2) +
- #geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=JUNTOS), width = 0.2, size = 0.7)+
-  
   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
   
   scale_color_npg(alpha = 0.7)+
@@ -1799,8 +1801,8 @@ vivienda.df<-bind_rows(riq,edu) %>%
   
 ggplot(aes(x = ANIO, y = ssi, group = TIPORESIDENCIA)) +
   
+   geom_rect(aes(xmin = 2015, xmax = Inf, ymin = -Inf, ymax = Inf), fill ="#edeeec")+
   geom_line(aes(color = TIPORESIDENCIA), size = 1.2) +
- #geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=TIPORESIDENCIA), width = 0.2, size = 0.7)+
   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
   
   scale_color_npg(alpha = 0.7)+
@@ -2160,11 +2162,10 @@ tipocred<-
     estrato = ifelse(estrato == "edu","ME","IQ")
   ) %>% 
   ggplot(aes(x = ANIO, y = ssi, group = tiposeguro)) +
-  
+  geom_rect(aes(xmin = 2015, xmax = Inf, ymin = -Inf, ymax = Inf), fill ="#edeeec")+
   geom_line(aes(color = tiposeguro), size = 1.2) +
- #geom_errorbar(aes(ymin = sii_l, ymax = sii_h, color=tiposeguro), width = 0.2, size = 0.7)+
-  geom_hline(aes(yintercept = 0), linetype = "dashed") + 
-  
+ 
+   geom_hline(aes(yintercept = 0), linetype = "dashed") + 
   scale_color_npg(alpha = 0.7)+
   scale_fill_npg()+
   
