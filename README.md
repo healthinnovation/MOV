@@ -1,3 +1,5 @@
+[![DOI](https://img.shields.io/badge/DOI-10.1016/j.lana.2022.100321-blue)](https://doi.org/10.1016/j.lana.2022.100321)
+
 # MOV - Missed opportunities for vaccination in Peru 2010-2020: A study of socioeconomic inequalities
 
 ## Study description
