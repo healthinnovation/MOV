@@ -13,6 +13,128 @@ library(haven)
 
 ```
 
+
+```{r}
+consulta_endes <- function(periodo, codigo_modulo, base, guardar = FALSE, ruta = "", codificacion=NULL) {
+  # Generamos dos objetos temporales: un archivo y una carpeta 
+  temp <- tempfile() ; tempdir <- tempdir()
+  
+  # Genera una matriz con el número identificador de versiones por cada año
+  versiones <- matrix(c(2022,786,2021,760,2020, 739, 2019, 691, 
+                        2018, 638, 2017,605,2016,548,2015,504,2014,441,
+                        2013,407,2012,323,2011,290,2010,260,
+                        2009,238,2008,209,2007,194,2006,183,
+                        2005,150,2004,120),byrow = T,ncol = 2)
+  
+  # Extrae el código de la encuesta con la matriz versiones
+  codigo_encuesta <- versiones[versiones[,1] == periodo,2]
+  ruta_base <- "http://proyectos.inei.gob.pe/iinei/srienaho/descarga/SPSS/" # La ruta de microdatos INEI
+  modulo <- paste("-Modulo",codigo_modulo,".zip",sep = "")
+  url <- paste(ruta_base,codigo_encuesta,modulo,sep = "")
+  
+  # Descargamos el archivo
+  utils::download.file(url,temp)
+  
+  # Listamos los archivos descargados y seleccionamos la base elegida
+  archivos <- utils::unzip(temp,list = T)
+  archivos <- archivos[stringr::str_detect(archivos$Name, paste0(base,"\\.")) == TRUE,]
+  
+  # Elegimos entre guardar los archivos o pasarlos directamente a un objeto
+  if(guardar == TRUE) {
+    utils::unzip(temp, files = archivos$Name, exdir = paste(getwd(), "/", ruta, sep = ""))
+    print(paste("Archivos descargados en: ", getwd(), "/", ruta, sep = ""))
+  } 
+  else {
+    endes <- haven::read_sav(
+      utils::unzip(
+        temp, 
+        files = archivos$Name[grepl(".sav|.SAV",archivos$Name)], 
+        exdir = tempdir
+        ), 
+      encoding = codificacion
+      )
+    nombres <- toupper(colnames(endes))
+    colnames(endes) <- nombres
+    endes
+  }
+}
+
+
+
+```
+
+# 2022
+
+```{r}
+rec43<-consulta_endes(periodo = 2022, codigo_modulo = 1634, base = "REC43", guardar = F)# eda
+rech23<-consulta_endes(periodo = 2022, codigo_modulo = 1630, base = "RECH23", guardar = F)# mediador
+rec0111<-consulta_endes(periodo = 2022, codigo_modulo = 1631, base = "REC0111", guardar = F)#otras variables
+rech0<-consulta_endes(periodo = 2022, codigo_modulo = 1629, base = "RECH0", guardar = F)# meses
+
+```
+
+```{r}
+MOV2022<-
+  rec43 %>% 
+  mutate(
+    HHID = as.numeric(str_sub(CASEID,1,-3))
+  ) %>% 
+  
+  left_join(
+
+rec0111 %>% 
+  mutate(
+    HHID = as.numeric(str_sub(CASEID,1,-3))
+  )
+) %>% 
+  
+left_join(rech0 %>% mutate(HHID=as.numeric(HHID))) %>% 
+  
+  left_join(rech23 %>% mutate(HHID=as.numeric(HHID))) %>% 
+  
+  mutate(
+    mes = HV008 - ((ID1-1900)*12),
+    ANIO = 2022
+  )
+
+```
+
+# 2021
+
+```{r}
+rec43<-consulta_endes(periodo = 2021, codigo_modulo = 1634, base = "REC43", guardar = F)# eda
+rech23<-consulta_endes(periodo = 2021, codigo_modulo = 1630, base = "RECH23", guardar = F)# mediador
+rec0111<-consulta_endes(periodo = 2021, codigo_modulo = 1631, base = "REC0111", guardar = F)#otras variables
+rech0<-consulta_endes(periodo = 2021, codigo_modulo = 1629, base = "RECH0", guardar = F)# meses
+
+```
+
+```{r}
+MOV2021<-
+  rec43 %>% 
+  mutate(
+    HHID = as.numeric(str_sub(CASEID,1,-3))
+  ) %>% 
+  
+  left_join(
+
+rec0111 %>% 
+  mutate(
+    HHID = as.numeric(str_sub(CASEID,1,-3))
+  )
+) %>% 
+  
+left_join(rech0 %>% mutate(HHID=as.numeric(HHID))) %>% 
+  
+  left_join(rech23 %>% mutate(HHID=as.numeric(HHID))) %>% 
+  
+  mutate(
+    mes = HV008 - ((ID1-1900)*12),
+    ANIO = 2021
+  ) 
+
+```
+
 # MOV 2020
 
 ```{r}
@@ -34,11 +156,11 @@ region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 
 ## HHID Y HIDX son las variables de union 
 
-VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+VACUNA1<- VACUNA1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+VACUNA2 <- VACUNA2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -57,7 +179,7 @@ VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>%
 #          HIDX = BIDX) 
 
 
-NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+NINIO2 <- NINIO2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -65,25 +187,25 @@ NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>%
 
 
 
-MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+MUJER1<- MUJER1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
 
-MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V130,V131,V190) %>% 
+MUJER2<-MUJER2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
-MUJER3<-MUJER3 %>% select(HHID,QH95) %>% 
+MUJER3<-MUJER3 %>% 
   
   mutate(JUNTOS = ifelse(QH95 == 1, 1,0),
          HHID = as.numeric(HHID)) %>% 
   select(-QH95)
 
 
-HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,HV122) %>% 
+HOGAR_MADRE<-HOGAR_MADRE %>% 
   
   mutate(HIDX = HVIDX,
          HHID = as.integer(HHID))
@@ -111,7 +233,12 @@ MOV2020<- VACUNA3 %>%
   
   left_join(MUJER_4, by = c("HHID","CASEID"))  %>% 
   
-  mutate(ANIO = 2020)
+  left_join(VIVIENDA1 %>% mutate(HHID = as.numeric(HHID))) %>% 
+  
+  left_join(HOGAR1 %>% mutate(HHID=as.numeric(HHID))) %>% 
+  
+  mutate(ANIO = 2020,
+         mes = HV008 - ((ID1-1900)*12))
 
 
 
@@ -138,11 +265,11 @@ region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 
 ## HHID Y HIDX son las variables de union 
 
-VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+VACUNA1<- VACUNA1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+VACUNA2 <- VACUNA2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -161,7 +288,7 @@ VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>%
 #          HIDX = BIDX) 
 
 
-NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+NINIO2 <- NINIO2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -169,25 +296,25 @@ NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>%
 
 
 
-MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+MUJER1<- MUJER1 %>%
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
 
-MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V130,V131,V190) %>% 
+MUJER2<-MUJER2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
-MUJER3<-MUJER3 %>% select(HHID,QH95) %>% 
+MUJER3<-MUJER3 %>% 
   
   mutate(JUNTOS = ifelse(QH95 == 1, 1,0),
          HHID = as.numeric(HHID)) %>% 
   select(-QH95)
 
 
-HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,HV122) %>% 
+HOGAR_MADRE<-HOGAR_MADRE %>% 
   
   mutate(HIDX = HVIDX,
          HHID = as.integer(HHID))
@@ -215,9 +342,13 @@ MOV2019<- VACUNA3 %>%
   
   left_join(MUJER_4, by = c("HHID","CASEID"))  %>% 
   
-  mutate(ANIO = 2019)
+  left_join(VIVIENDA1 %>% mutate(HHID = as.numeric(HHID))) %>% 
+  
+  left_join(HOGAR1 %>% mutate(HHID=as.numeric(HHID))) %>%  
 
-
+  
+  mutate(ANIO = 2019,
+         mes = HV008 - ((ID1-1900)*12))
 
 ```
 #2018
@@ -240,11 +371,11 @@ region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 
 ## HHID Y HIDX son las variables de union 
 
-VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+VACUNA1<- VACUNA1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+VACUNA2 <- VACUNA2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -263,7 +394,7 @@ VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>%
 #          HIDX = BIDX) 
 
 
-NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+NINIO2 <- NINIO2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -271,25 +402,25 @@ NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>%
 
 
 
-MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+MUJER1<- MUJER1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
 
-MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V130,V131,V190) %>% 
+MUJER2<-MUJER2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
-MUJER3<-MUJER3 %>% select(HHID,QH95) %>% 
+MUJER3<-MUJER3 %>% 
   
   mutate(JUNTOS = ifelse(QH95 == 1, 1,0),
          HHID = as.numeric(HHID)) %>% 
   select(-QH95)
 
 
-HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,HV122) %>% 
+HOGAR_MADRE<-HOGAR_MADRE %>% 
   
   mutate(HIDX = HVIDX,
          HHID = as.integer(HHID))
@@ -317,7 +448,12 @@ MOV2018<- VACUNA3 %>%
   
   left_join(MUJER_4, by = c("HHID","CASEID"))  %>% 
   
-  mutate(ANIO = 2018)
+  left_join(VIVIENDA1 %>% mutate(HHID = as.numeric(HHID))) %>% 
+  
+  left_join(HOGAR1 %>% mutate(HHID=as.numeric(HHID))) %>% 
+  
+  mutate(ANIO = 2018,
+         mes = HV008 - ((2018-1900)*12))
 
 
 
@@ -343,11 +479,11 @@ region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 
 ## HHID Y HIDX son las variables de union 
 
-VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+VACUNA1<- VACUNA1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+VACUNA2 <- VACUNA2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -366,7 +502,7 @@ VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>%
 #          HIDX = BIDX) 
 
 
-NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+NINIO2 <- NINIO2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -374,13 +510,13 @@ NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>%
 
 
 
-MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+MUJER1<- MUJER1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
 
-MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V130,V131,V190) %>% 
+MUJER2<-MUJER2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
@@ -392,7 +528,7 @@ MUJER3<-MUJER3 %>% select(HHID,QH95) %>%
   select(-QH95)
 
 
-HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,HV122) %>% 
+HOGAR_MADRE<-HOGAR_MADRE %>% 
   
   mutate(HIDX = HVIDX,
          HHID = as.integer(HHID))
@@ -420,7 +556,12 @@ MOV2017<- VACUNA3 %>%
   
   left_join(MUJER_4, by = c("HHID","CASEID"))  %>% 
   
-  mutate(ANIO = 2017)
+  left_join(VIVIENDA1 %>% mutate(HHID = as.numeric(HHID))) %>% 
+  
+  left_join(HOGAR1 %>% mutate(HHID=as.numeric(HHID))) %>%  
+  
+  mutate(ANIO = 2017,
+         mes = HV008 - ((2017-1900)*12))
 
 ```
 
@@ -443,11 +584,11 @@ region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 
 ## HHID Y HIDX son las variables de union 
 
-VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+VACUNA1<- VACUNA1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+VACUNA2 <- VACUNA2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -466,7 +607,7 @@ VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>%
 #          HIDX = BIDX) 
 
 
-NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+NINIO2 <- NINIO2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -474,27 +615,27 @@ NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>%
 
 
 
-MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+MUJER1<- MUJER1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
 
-MUJER2<-MUJER2 %>% select(CASEID,V001,V002,v005,V012,V022,V023,V024,V025,V101,V102,V106,V130,V131,V190) %>% 
+MUJER2<-MUJER2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          V005 = v005) %>% 
   select(-v005)
 
 
-MUJER3<-MUJER3 %>% select(HHID,QH95) %>% 
+MUJER3<-MUJER3 %>% 
   
   mutate(JUNTOS = ifelse(QH95 == 1, 1,0),
          HHID = as.numeric(HHID)) %>% 
   select(-QH95)
 
 
-HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,HV122) %>% 
+HOGAR_MADRE<-HOGAR_MADRE %>% 
   
   mutate(HIDX = HVIDX,
          HHID = as.integer(HHID))
@@ -522,7 +663,12 @@ MOV2016<- VACUNA3 %>%
   
   left_join(MUJER_4, by = c("HHID","CASEID"))  %>% 
   
-  mutate(ANIO = 2016)
+  left_join(VIVIENDA1 %>% mutate(HHID = as.numeric(HHID))) %>% 
+  
+  left_join(HOGAR1 %>% mutate(HHID=as.numeric(HHID))) %>% 
+  
+  mutate(ANIO = 2016,
+         mes = HV008 - ((2016-1900)*12))
 
 
 ```
@@ -546,11 +692,11 @@ region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 
 ## HHID Y HIDX son las variables de union 
 
-VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+VACUNA1<- VACUNA1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+VACUNA2 <- VACUNA2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -569,7 +715,7 @@ VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>%
 #          HIDX = BIDX) 
 
 
-NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+NINIO2 <- NINIO2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -577,25 +723,25 @@ NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>%
 
 
 
-MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+MUJER1<- MUJER1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
 
-MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V130,V131,V190) %>% 
+MUJER2<-MUJER2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
-MUJER3<-MUJER3 %>% select(HHID,QH95) %>% 
+MUJER3<-MUJER3 %>% 
   
   mutate(JUNTOS = ifelse(QH95 == 1, 1,0),
          HHID = as.numeric(HHID)) %>% 
   select(-QH95)
 
 
-HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,HV122) %>% 
+HOGAR_MADRE<-HOGAR_MADRE %>% 
   
   mutate(HIDX = HVIDX,
          HHID = as.integer(HHID))
@@ -623,7 +769,12 @@ MOV2015<- VACUNA3 %>%
   
   left_join(MUJER_4, by = c("HHID","CASEID"))  %>% 
   
-  mutate(ANIO = 2015)
+  left_join(VIVIENDA1 %>% mutate(HHID = as.numeric(HHID))) %>% 
+  
+  left_join(HOGAR1 %>% mutate(HHID=as.numeric(HHID))) %>% 
+  
+  mutate(ANIO = 2015,
+         mes = HV008 - ((2015-1900)*12))
 
 
 
@@ -649,11 +800,11 @@ region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 
 ## HHID Y HIDX son las variables de union 
 
-VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+VACUNA1<- VACUNA1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+VACUNA2 <- VACUNA2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -672,7 +823,7 @@ VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>%
 #          HIDX = BIDX) 
 
 
-NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+NINIO2 <- NINIO2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -680,27 +831,27 @@ NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>%
 
 
 
-MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+MUJER1<- MUJER1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
 
-MUJER2<-MUJER2 %>% select(CASEID,V001,V002,v005,V012,V022,V023,V024,V025,V101,V102,V106,V130,V131,V190) %>% 
+MUJER2<-MUJER2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          V005 = v005) %>% 
   select(-v005)
 
 
-MUJER3<-MUJER3 %>% select(HHID,QH95) %>% 
+MUJER3<-MUJER3 %>% 
   
   mutate(JUNTOS = ifelse(QH95 == 1, 1,0),
          HHID = as.numeric(HHID)) %>% 
   select(-QH95)
 
 
-HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,HV122) %>% 
+HOGAR_MADRE<-HOGAR_MADRE %>% 
   
   mutate(HIDX = HVIDX,
          HHID = as.integer(HHID))
@@ -728,7 +879,14 @@ MOV2014<- VACUNA3 %>%
   
   left_join(MUJER_4, by = c("HHID","CASEID"))  %>% 
   
-  mutate(ANIO = 2014)
+  left_join(VIVIENDA1 %>% mutate(HHID = as.numeric(HHID))) %>% 
+  
+  left_join(HOGAR1 %>% mutate(HHID=as.numeric(HHID))) %>% 
+  
+  mutate(
+    ANIO = 2014,
+    mes = HV008 - ((2014-1900)*12)) 
+  
 
 
 ```
@@ -752,11 +910,11 @@ region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 
 ## HHID Y HIDX son las variables de union 
 
-VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+VACUNA1<- VACUNA1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+VACUNA2 <- VACUNA2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -775,7 +933,7 @@ VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>%
 #          HIDX = BIDX) 
 
 
-NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+NINIO2 <- NINIO2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -783,7 +941,7 @@ NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>%
 
 
 
-MUJER1<- MUJER1 %>% select(CASEID,V481:v481x) %>% 
+MUJER1<- MUJER1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          V481X = v481x) %>% 
@@ -791,19 +949,19 @@ MUJER1<- MUJER1 %>% select(CASEID,V481:v481x) %>%
 
 
 
-MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V130,V131,V190) %>% 
+MUJER2<-MUJER2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
-MUJER3<-MUJER3 %>% select(CASEID,SREGION,S108N,S484) %>% 
+MUJER3<-MUJER3 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          JUNTOS = ifelse(S484 == 1 | S484 == 2,1,0),
          JUNTOS = 0)
 
 
-HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,HV122) %>% 
+HOGAR_MADRE<-HOGAR_MADRE %>% 
   
   mutate(HIDX = HVIDX,
          HHID = as.integer(HHID))
@@ -831,7 +989,13 @@ MOV2013<- VACUNA3 %>%
   
   left_join(MUJER_4, by = c("HHID","CASEID"))  %>% 
   
-  mutate(ANIO = 2013)
+  left_join(VIVIENDA1 %>% mutate(HHID = as.numeric(HHID))) %>% 
+  
+  left_join(HOGAR1 %>% mutate(HHID=as.numeric(HHID))) %>% 
+  
+  mutate(
+    ANIO = 2013,
+    mes = HV008 - ((2013-1900)*12),)
 
 ```
 
@@ -854,11 +1018,11 @@ region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 
 ## HHID Y HIDX son las variables de union 
 
-VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+VACUNA1<- VACUNA1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+VACUNA2 <- VACUNA2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -877,7 +1041,7 @@ VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>%
 #          HIDX = BIDX) 
 
 
-NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+NINIO2 <- NINIO2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -885,13 +1049,13 @@ NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>%
 
 
 
-MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+MUJER1<- MUJER1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
 
-MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V130,V131,V190) %>% 
+MUJER2<-MUJER2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
@@ -902,7 +1066,7 @@ MUJER3<-MUJER3 %>% select(CASEID,SREGION,S108N,S484) %>%
          JUNTOS = ifelse(S484 == 1 | S484 == 2,1,0))
 
 
-HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,HV122) %>% 
+HOGAR_MADRE<-HOGAR_MADRE %>% 
   
   mutate(HIDX = HVIDX,
          HHID = as.integer(HHID))
@@ -930,9 +1094,15 @@ MOV2012<- VACUNA3 %>%
   
   left_join(MUJER_4, by = c("HHID","CASEID"))  %>% 
   
-  mutate(ANIO = 2012)
+  left_join(VIVIENDA1 %>% mutate(HHID = as.numeric(HHID))) %>% 
+  
+  left_join(HOGAR1 %>% mutate(HHID=as.numeric(HHID))) %>% 
+  
+  mutate(
+    ANIO = 2012,
+    mes = HV008 - ((2012-1900)*12),) 
 
-table(MOV2012$JUNTOS)
+
 ```
 
 
@@ -955,11 +1125,11 @@ region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 
 ## HHID Y HIDX son las variables de union 
 
-VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+VACUNA1<- VACUNA1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+VACUNA2 <- VACUNA2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -978,7 +1148,7 @@ VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>%
 #          HIDX = BIDX) 
 
 
-NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+NINIO2 <- NINIO2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -986,24 +1156,24 @@ NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>%
 
 
 
-MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+MUJER1<- MUJER1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
 
-MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V130,V131,V190) %>% 
+MUJER2<-MUJER2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
-MUJER3<-MUJER3 %>% select(CASEID,SREGION,S108N,S484) %>% 
+MUJER3<-MUJER3 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          JUNTOS = ifelse(S484 == 1 | S484 == 2,1,0))
 
 
-HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,HV122) %>% 
+HOGAR_MADRE<-HOGAR_MADRE %>% 
   
   mutate(HIDX = HVIDX,
          HHID = as.integer(HHID))
@@ -1031,7 +1201,12 @@ MOV2011<- VACUNA3 %>%
   
   left_join(MUJER_4, by = c("HHID","CASEID"))  %>% 
   
-  mutate(ANIO = 2011)
+  left_join(VIVIENDA1 %>% mutate(HHID = as.numeric(HHID))) %>% 
+  
+  left_join(HOGAR1 %>% mutate(HHID=as.numeric(HHID))) %>% 
+  
+  mutate(ANIO = 2011,
+         mes = HV008 - ((2011-1900)*12),) 
 
 
 
@@ -1041,7 +1216,6 @@ MOV2011<- VACUNA3 %>%
 # 2010
 
 ```{r}
-#NINIO <- haven::read_sav("ENDES/2010/DIT.sav")
 NINIO2 <- read_sav("ENDES/2010/REC41.sav")
 MUJER1 <- read_sav("ENDES/2010/REC42.sav" )
 VACUNA1 <- read_sav("ENDES/2010/REC43.sav")
@@ -1057,11 +1231,11 @@ region_shape <- st_read("./ENDES/Regiones/DEPARTAMENTOS.shp")
 
 ## HHID Y HIDX son las variables de union 
 
-VACUNA1<- VACUNA1 %>% select(CASEID,HIDX,H1:H10) %>% 
+VACUNA1<- VACUNA1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
-VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>% 
+VACUNA2 <- VACUNA2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -1080,7 +1254,7 @@ VACUNA2 <- VACUNA2 %>% select(CASEID,IDX95,S466,S466B,S45D4:S45IF2Y) %>%
 #          HIDX = BIDX) 
 
 
-NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>% 
+NINIO2 <- NINIO2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
@@ -1088,25 +1262,25 @@ NINIO2 <- NINIO2 %>% select(CASEID,MIDX,M15) %>%
 
 
 
-MUJER1<- MUJER1 %>% select(CASEID,V481:V481X) %>% 
+MUJER1<- MUJER1 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
 
-MUJER2<-MUJER2 %>% select(CASEID,V001,V002,V005,V012,V022,V023,V024,V025,V101,V102,V106,V130,V131,V190) %>% 
+MUJER2<-MUJER2 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)))
 
 
-MUJER3<-MUJER3 %>% select(CASEID,SREGION,S108N,S484) %>% 
+MUJER3<-MUJER3 %>% 
   
   mutate(HHID = as.numeric(str_sub(CASEID,1,-3)),
          
          JUNTOS = ifelse(S484 == 1 | S484 == 2,1,0))
 
 
-HOGAR_MADRE<-HOGAR_MADRE %>% select(HHID,HVIDX,HV122) %>% 
+HOGAR_MADRE<-HOGAR_MADRE %>% 
   
   mutate(HIDX = HVIDX,
          HHID = as.integer(HHID))
@@ -1134,11 +1308,75 @@ MOV2010<- VACUNA3 %>%
   
   left_join(MUJER_4, by = c("HHID","CASEID"))  %>% 
   
-  mutate(ANIO = 2010)
-
-
+  left_join(VIVIENDA1 %>% mutate(HHID = as.numeric(HHID))) %>% 
+  
+  left_join(HOGAR1 %>% mutate(HHID=as.numeric(HHID))) %>% 
+  
+  mutate(
+    mes = HV008 - ((2010-1900)*12),
+    ANIO = 2010) 
 
 ```
+
+
+
+# 2009
+
+```{r}
+rec43<-consulta_endes(periodo = 2009, codigo_modulo = 70, base = "REC43", guardar = F)# eda
+rech23<-consulta_endes(periodo = 2009, codigo_modulo = 65, base = "RECH23", guardar = F)# mediador
+rec0111<-consulta_endes(periodo = 2009, codigo_modulo = 66, base = "REC0111", guardar = F)#otras variables
+rech0<-consulta_endes(periodo = 2009, codigo_modulo = 64, base = "RECH0", guardar = F)# meses
+
+```
+
+```{r}
+MOV2009<-
+  rec43 %>% 
+  mutate(
+    HHID = as.numeric(str_sub(CASEID,1,-3))
+  ) %>% 
+  
+  left_join(
+
+rec0111 %>% 
+  mutate(
+    HHID = as.numeric(str_sub(CASEID,1,-3))
+  )
+) %>% 
+  
+  left_join(rech0 %>% mutate(HHID=as.numeric(HHID))) %>% 
+  
+  left_join(rech23 %>% mutate(HHID=as.numeric(HHID))) %>% 
+  
+  mutate(
+    mes = HV008 - ((2009-1900)*12),
+    ANIO = 2009
+  ) %>% 
+  select(ANIO,mes,CASEID,HHID,H11,HV201,HV205,HV225,HV237,HV008)
+
+```
+
+```{r}
+list<- list(MOV2010,MOV2011,MOV2012,
+            MOV2013,MOV2014,MOV2015,
+            MOV2016,MOV2017,MOV2018,
+            MOV2019,MOV2020,MOV2021,
+            MOV2022)
+
+mov_general<-map_df(.x = list,
+                    
+                    .f =
+                      ~.x %>% 
+                      select(ANIO,mes,CASEID,HHID,H11,HV201,HV205,HV225,HV237,HV008,
+                             V012,V102,V106,V190))
+
+
+write.csv(mov_general,"./NewData/mov_general2023.csv",row.names = F)
+
+```
+
+
 
 
 ```{r}
