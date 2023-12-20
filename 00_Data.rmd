@@ -1352,13 +1352,13 @@ rec0111 %>%
   mutate(
     mes = HV008 - ((2009-1900)*12),
     ANIO = 2009
-  ) %>% 
-  select(ANIO,mes,CASEID,HHID,H11,HV201,HV205,HV225,HV237,HV008)
+  )
 
 ```
 
 ```{r}
-list<- list(MOV2010,MOV2011,MOV2012,
+list<- list(MOV2009,
+            MOV2010,MOV2011,MOV2012,
             MOV2013,MOV2014,MOV2015,
             MOV2016,MOV2017,MOV2018,
             MOV2019,MOV2020,MOV2021,
@@ -1369,7 +1369,7 @@ mov_general<-map_df(.x = list,
                     .f =
                       ~.x %>% 
                       select(ANIO,mes,CASEID,HHID,H11,HV201,HV205,HV225,HV237,HV008,
-                             V012,V102,V106,V190))
+                             V012,V024,V001,V005,V022,V102,V106,V190))
 
 
 write.csv(mov_general,"./NewData/mov_general2023.csv",row.names = F)
